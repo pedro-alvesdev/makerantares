@@ -862,6 +862,106 @@ function filterStudents() {
   });
 }
 
+    window.showAddStudentModal = () => {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Novo Aluno</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="add-student-form">
+          <div class="form-group">
+            <label class="form-label">Nome do Aluno</label>
+            <input type="text" class="form-input" name="nome_aluno" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Série</label>
+            <input type="text" class="form-input" name="serie" placeholder="Ex: 8 ano" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Turma</label>
+            <input type="text" class="form-input" name="nome_turma" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-success" onclick="saveNewStudent()">Cadastrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
+
+window.editStudent = (id) => {
+  const student = students.find(s => s.id === id);
+  if (!student) return;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Editar Aluno</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-student-form">
+          <div class="form-group">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-input" name="nome_aluno" value="${student.nome_aluno}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Matrícula</label>
+            <input type="text" class="form-input" name="matricula" value="${student.matricula || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sede</label>
+            <input type="text" class="form-input" name="sede" value="${student.sede || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Série</label>
+            <input type="text" class="form-input" name="serie" value="${student.serie || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Turma</label>
+            <input type="text" class="form-input" name="nome_turma" value="${student.nome_turma || ''}">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="confirmRemoveStudent('${student.id}')" style="background:#666">Arquivar</button>
+        <button class="btn btn-primary" onclick="updateStudent('${student.id}')">Salvar Alterações</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
+
+window.showObservationModal = (studentId, projectKey, stageIndex) => {
+  const student = students.find(s => s.id === studentId);
+  const data = getStudentProjectData(student, projectKey);
+  const currentObs = (data.observacoes && data.observacoes[stageIndex]) ? data.observacoes[stageIndex] : '';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Observação</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="obs-text" class="form-input" rows="5">${currentObs}</textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="saveObservation('${studentId}', '${projectKey}', ${stageIndex})">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
+
 function getStudentProjectData(student, projectKey) {
   let data = student[projectKey + '_etapas'];
   if (!data) return { checklist: [], observacoes: [] };
