@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema Maker</title>
-  <script src="/_sdk/data_sdk.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body {
@@ -798,14 +797,24 @@
 
   <script>
     const defaultConfig = {
-      system_title: "Sistema de Gerenciamento - Espa�o Maker",
+      system_title: "Sistema de Gerenciamento - Espaço Maker",
       welcome_message: "Bem-vindo ao Sistema Maker"
     };
 
-    let students = [];
-    let seriesProjectsConfig = {};
-    let currentView = 'checklist';
-    let isAuthenticated = false;
+    // Substitua as variáveis iniciais por estas
+const SUPABASE_URL = 'https://ddowzcnpbhrlsjtkdivz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_G1nqjS9ka2hmsVEEHPjd2A_OMLW9dTu'; // Use a 'anon public' do painel API
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let students = [];
+let seriesProjectsConfig = {};
+let isAuthenticated = false;;
+
+// Configuração padrão que antes vinha do elementSdk
+const defaultConfig = {
+  system_title: "Sistema de Gerenciamento - Espaço Maker",
+  welcome_message: "Bem-vindo ao Sistema Maker"
+};
 
     const filters = {
       sede: '',
@@ -894,7 +903,7 @@
             <form id="login-form">
               <div class="form-group">
                 <label class="form-label" for="password-input">Senha de Acesso</label>
-                <input type="text" id="password-input" class="form-input" placeholder="Digite apenas n�meros" required inputmode="numeric" pattern="[0-9]*" onkeypress="if (!/[0-9]/.test(event.key)) event.preventDefault()">
+                <input type="text" id="password-input" class="form-input" placeholder="Digite apenas números" required inputmode="numeric" pattern="[0-9]*" onkeypress="if (!/[0-9]/.test(event.key)) event.preventDefault()">
               </div>
               <button type="submit" class="btn btn-primary">
                 Entrar
@@ -1097,10 +1106,11 @@
         const password = passwordInput.value.trim();
         const errorDiv = document.getElementById('login-error');
 
-        if (password === '123456') {
-          isAuthenticated = true;
-          currentView = 'checklist';
-          renderCurrentView();
+        // Dentro da sua setupLoginForm(), no if da senha correta:
+if (password === '123456') {
+    isAuthenticated = true;
+    await fetchStudents(); // Isso vai disparar a primeira carga de dados
+}
         } else {
           if (errorDiv) {
             errorDiv.innerHTML = '<div class="error-message">Senha incorreta. Tente novamente.</div>';
@@ -1472,52 +1482,34 @@
     };
 
     window.saveNewStudent = async () => {
-      const form = document.getElementById('add-student-form');
-      const formData = new FormData(form);
+  const form = document.getElementById('add-student-form');
+  const formData = new FormData(form);
+  const serie = formData.get('serie');
+  
+  const config = seriesProjectsConfig[serie] || {
+    projeto1: { nome: `Projeto 1 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+    projeto2: { nome: `Projeto 2 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+    projeto3: { nome: `Projeto 3 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
+  };
 
-      const serie = formData.get('serie');
+  const studentData = {
+    nome_aluno: formData.get('nome_aluno'),
+    matricula: formData.get('matricula'),
+    sede: formData.get('sede'),
+    serie: serie,
+    nome_turma: formData.get('nome_turma'),
+    turno: formData.get('turno'),
+    grupo: formData.get('grupo') || '',
+    projetos_config: config,
+    projeto1_etapas: { ...config.projeto1, checklist: [], observacoes: [] },
+    projeto2_etapas: { ...config.projeto2, checklist: [], observacoes: [] },
+    projeto3_etapas: { ...config.projeto3, checklist: [], observacoes: [] },
+    ativo: true
+  };
 
-      if (!seriesProjectsConfig[serie]) {
-        seriesProjectsConfig[serie] = {
-          projeto1: { nome: `Projeto 1 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-          projeto2: { nome: `Projeto 2 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-          projeto3: { nome: `Projeto 3 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
-        };
-      }
-
-      const studentData = {
-        id: Date.now().toString(),
-        matricula: formData.get('matricula'),
-        nome_aluno: formData.get('nome_aluno'),
-        sede: formData.get('sede'),
-        serie: serie,
-        nome_turma: formData.get('nome_turma'),
-        turno: formData.get('turno'),
-        grupo: formData.get('grupo') || '',
-        projetos_config: JSON.stringify(seriesProjectsConfig[serie]),
-        projeto1_etapas: JSON.stringify({ ...seriesProjectsConfig[serie].projeto1, checklist: [], observacoes: [] }),
-        projeto2_etapas: JSON.stringify({ ...seriesProjectsConfig[serie].projeto2, checklist: [], observacoes: [] }),
-        projeto3_etapas: JSON.stringify({ ...seriesProjectsConfig[serie].projeto3, checklist: [], observacoes: [] }),
-        ativo: true
-      };
-
-      const btn = event.target;
-      btn.disabled = true;
-      btn.textContent = 'Adicionando...';
-
-      const result = await window.dataSdk.create(studentData);
-
-      if (result.isOk) {
-        closeModal();
-      } else {
-        btn.disabled = false;
-        btn.textContent = 'Adicionar';
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.textContent = 'Erro ao adicionar aluno. Tente novamente.';
-        form.insertBefore(errorDiv, form.firstChild);
-      }
-    };
+  const { error } = await _supabase.from('students').insert([studentData]);
+  if (!error) { closeModal(); await fetchStudents(); }
+};
 
     window.editStudent = (id) => {
       const student = students.find(s => s.__backendId === id);
@@ -2139,42 +2131,112 @@
       renderCurrentView();
     }
 
-    async function init() {
-      try {
-        if (window.elementSdk) {
-          window.elementSdk.init({
-            defaultConfig,
-            onConfigChange,
-            mapToCapabilities: (config) => ({
-              recolorables: [],
-              borderables: [],
-              fontEditable: undefined,
-              fontSizeable: undefined
-            }),
-            mapToEditPanelValues: (config) => new Map([
-              ["system_title", config.system_title || defaultConfig.system_title],
-              ["welcome_message", config.welcome_message || defaultConfig.welcome_message]
-            ])
-          });
-        }
+   window.toggleStage = async (id, projectKey, stageIndex, checked) => {
+  const student = students.find(s => s.id === id);
+  let data = student[projectKey + '_etapas'];
+  if (typeof data === 'string') data = JSON.parse(data);
 
-        renderCurrentView();
+  data.checklist[stageIndex] = checked;
+  
+  await _supabase.from('students').update({ [projectKey + '_etapas']: data }).eq('id', id);
+  student[projectKey + '_etapas'] = data;
+  renderCurrentView();
+};
 
-        const initResult = await window.dataSdk.init(dataHandler);
+    window.saveObservation = async (studentId, projectKey, stageIndex) => {
+  const student = students.find(s => s.id === studentId || s.__backendId === studentId);
+  if (!student) return;
 
-        if (!initResult.isOk) {
-          console.error("Failed to initialize data SDK");
-        }
-      } catch (error) {
-        console.error("Initialization error:", error);
+  const obsText = document.getElementById('obs-text').value;
+  let data = student[projectKey + '_etapas'] || { checklist: [], observacoes: [] };
+  if (typeof data === 'string') data = JSON.parse(data);
+
+  if (!data.observacoes) data.observacoes = [];
+  data.observacoes[stageIndex] = obsText;
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  const { error } = await supabase
+    .from('students')
+    .update({ [projectKey + '_etapas']: data })
+    .eq('id', studentId);
+
+  if (!error) {
+    student[projectKey + '_etapas'] = data;
+    closeModal();
+    renderCurrentView();
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Salvar';
+    alert("Erro ao salvar observação.");
+  }
+};
+
+   // Substitua sua function init() e o objeto dataHandler por estes
+async function init() {
+  renderCurrentView();
+}
+
+async function fetchStudents() {
+  const { data, error } = await _supabase
+    .from('students')
+    .select('*')
+    .eq('ativo', true);
+
+  if (!error) {
+    students = data.map(s => ({
+      ...s,
+      __backendId: s.id // Mantém compatibilidade com suas funções de UI
+    }));
+    
+    // Atualiza o cache de configurações de projetos por série
+    students.forEach(student => {
+      if (student.serie && student.projetos_config) {
+        seriesProjectsConfig[student.serie] = typeof student.projetos_config === 'string' 
+          ? JSON.parse(student.projetos_config) 
+          : student.projetos_config;
       }
-    }
+    });
+    renderCurrentView();
+  }
+}
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
+// Nova função para buscar dados do Supabase
+async function fetchStudents() {
+  const { data, error } = await supabase
+    .from('students')
+    .select('*')
+    .eq('ativo', true);
+
+  if (error) {
+    console.error("Erro ao buscar alunos:", error);
+  } else {
+    // Mapeamos os dados do banco para o formato que seu código já usa
+    students = data.map(s => ({
+      ...s,
+      __backendId: s.id // Usamos o ID do Supabase como backendId
+    }));
+    
+    // Processa as configurações de projeto
+    students.forEach(student => {
+      if (student.serie && student.projetos_config) {
+        try {
+          const config = typeof student.projetos_config === 'string' 
+            ? JSON.parse(student.projetos_config) 
+            : student.projetos_config;
+          
+          if (!seriesProjectsConfig[student.serie]) {
+            seriesProjectsConfig[student.serie] = config;
+          }
+        } catch (e) { console.error("Erro config:", e); }
+      }
+    });
+
+    renderCurrentView();
+  }
+}
   </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e58f372a280f633',t:'MTc3NTA2MDczOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
