@@ -7,789 +7,190 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body {
-      box-sizing: border-box;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
-      color: #e0e0e0;
-      overflow: hidden;
-    }
-
-    .app-container {
-      height: 100%;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      overflow: auto;
-    }
-
-    /* Login Screen */
-    .login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-    }
-
-    .login-box {
-      background: #2d2d2d;
-      padding: 3rem;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(220, 53, 69, 0.2);
-      width: 90%;
-      max-width: 400px;
-      border: 2px solid #dc3545;
-    }
-
-    .login-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #dc3545;
-      text-align: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .login-subtitle {
-      text-align: center;
-      color: #9e9e9e;
-      margin-bottom: 2rem;
-      font-size: 0.9rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-      display: block;
-      margin-bottom: 0.5rem;
-      color: #e0e0e0;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 0.875rem;
-      border: 2px solid #424242;
-      border-radius: 8px;
-      background: #1a1a1a;
-      color: #e0e0e0;
-      font-size: 1rem;
-      transition: all 0.3s;
-    }
-
-    .form-input:focus {
-      outline: none;
-      border-color: #dc3545;
-      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-    }
-
-    .btn {
-      padding: 0.875rem 1.5rem;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-primary {
-      background: #dc3545;
-      color: white;
-      width: 100%;
-    }
-
-    .btn-primary:hover {
-      background: #c82333;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background: #5a6268;
-    }
-
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-
-    .btn-success:hover {
-      background: #218838;
-    }
-
-    .btn-small {
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
-    }
-
-    .btn-icon {
-      padding: 0.5rem;
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #6c757d;
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-icon:hover {
-      background: #5a6268;
-      transform: scale(1.05);
-    }
-
-    .error-message {
-      background: rgba(220, 53, 69, 0.1);
-      color: #dc3545;
-      padding: 0.75rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      text-align: center;
-      border: 1px solid rgba(220, 53, 69, 0.3);
-    }
-
-    .success-message {
-      background: rgba(40, 167, 69, 0.1);
-      color: #28a745;
-      padding: 0.75rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      text-align: center;
-      border: 1px solid rgba(40, 167, 69, 0.3);
-    }
-
-    /* Main App */
-    .header {
-      background: #2d2d2d;
-      padding: 1.5rem;
-      border-bottom: 3px solid #dc3545;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .header-title {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #dc3545;
-    }
-
-    .nav-tabs {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .nav-tab {
-      padding: 0.75rem 1.5rem;
-      background: transparent;
-      color: #9e9e9e;
-      border: 2px solid transparent;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s;
-    }
-
-    .nav-tab.active {
-      background: rgba(220, 53, 69, 0.1);
-      color: #dc3545;
-      border-color: #dc3545;
-    }
-
-    .nav-tab:hover:not(.active) {
-      background: rgba(255, 255, 255, 0.05);
-      color: #e0e0e0;
-    }
-
-    .content {
-      flex: 1;
-      padding: 2rem;
-      overflow-y: auto;
-    }
-
-    .filters {
-      background: #2d2d2d;
-      padding: 1.5rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .actions-bar {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    /* Table */
-    .table-container {
-      background: #2d2d2d;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .table thead {
-      background: #dc3545;
-      color: white;
-    }
-
-    .table th, .table td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #424242;
-    }
-
-    .table tbody tr {
-      transition: background 0.2s;
-    }
-
-    .table tbody tr:hover {
-      background: rgba(220, 53, 69, 0.05);
-    }
-
-    .checkbox {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      accent-color: #dc3545;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-
-    .badge-lado-a {
-      background: rgba(220, 53, 69, 0.2);
-      color: #dc3545;
-      border: 1px solid #dc3545;
-    }
-
-    .badge-lado-b {
-      background: rgba(108, 117, 125, 0.2);
-      color: #6c757d;
-      border: 1px solid #6c757d;
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 1rem;
-    }
-
-    .modal {
-      background: #2d2d2d;
-      border-radius: 16px;
-      max-width: 600px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      border: 2px solid #dc3545;
-    }
-
-    .modal-large {
-      max-width: 800px;
-    }
-
-    .modal-header {
-      padding: 1.5rem;
-      border-bottom: 2px solid #424242;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #dc3545;
-    }
-
-    .modal-body {
-      padding: 1.5rem;
-    }
-
-    .modal-footer {
-      padding: 1.5rem;
-      border-top: 2px solid #424242;
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-    }
-
-    .close-btn {
-      background: transparent;
-      border: none;
-      font-size: 1.5rem;
-      color: #9e9e9e;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      transition: all 0.2s;
-    }
-
-    .close-btn:hover {
-      background: rgba(220, 53, 69, 0.1);
-      color: #dc3545;
-    }
-
-    .student-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-
-    .student-item {
-      padding: 0.75rem;
-      border: 1px solid #424242;
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #1a1a1a;
-    }
-
-    .student-info {
-      flex: 1;
-    }
-
-    .student-name {
-      font-weight: 600;
-      color: #e0e0e0;
-    }
-
-    .student-details {
-      font-size: 0.875rem;
-      color: #9e9e9e;
-      margin-top: 0.25rem;
-    }
-
-    .group-buttons {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .group-btn {
-      padding: 0.5rem 1rem;
-      border: 2px solid;
-      border-radius: 6px;
-      background: transparent;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-    }
-
-    .group-btn.lado-a {
-      border-color: #dc3545;
-      color: #dc3545;
-    }
-
-    .group-btn.lado-a.active {
-      background: #dc3545;
-      color: white;
-    }
-
-    .group-btn.lado-b {
-      border-color: #6c757d;
-      color: #6c757d;
-    }
-
-    .group-btn.lado-b.active {
-      background: #6c757d;
-      color: white;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 4rem 2rem;
-      color: #9e9e9e;
-    }
-
-    .empty-state-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    .empty-state-text {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .empty-state-subtext {
-      font-size: 0.875rem;
-    }
-
-    .loading {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    select.form-input {
-      cursor: pointer;
-    }
-
-    /* Project Config */
-    .project-config {
-      background: #1a1a1a;
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-bottom: 1.5rem;
-      border: 2px solid #424242;
-    }
-
-    .project-config-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .project-config-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #dc3545;
-    }
-
-    .stage-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .stage-item {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-
-    .stage-item input {
-      flex: 1;
-    }
-
-    .stage-number {
-      width: 32px;
-      height: 32px;
-      background: #dc3545;
-      color: white;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.875rem;
-    }
-
-    /* Checklist Cell */
-    .checklist-cell {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .obs-indicator {
-      width: 8px;
-      height: 8px;
-      background: #28a745;
-      border-radius: 50%;
-      display: inline-block;
-    }
-
-    .completion-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.25rem 0.75rem;
-      background: rgba(40, 167, 69, 0.1);
-      border: 1px solid #28a745;
-      border-radius: 12px;
-      color: #28a745;
-      font-weight: 600;
-      font-size: 0.875rem;
-      animation: slideIn 0.4s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    /* Progress Bar */
-    .progress-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-
-    .progress-container {
-      background: #2d2d2d;
-      border-radius: 16px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 500px;
-      border: 2px solid #dc3545;
-    }
-
-    .progress-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #dc3545;
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-
-    .progress-info {
-      text-align: center;
-      color: #e0e0e0;
-      margin-bottom: 1.5rem;
-      font-size: 1rem;
-    }
-
-    .progress-bar-wrapper {
-      background: #1a1a1a;
-      border-radius: 8px;
-      height: 40px;
-      overflow: hidden;
-      margin-bottom: 1rem;
-      border: 2px solid #424242;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
-      width: 0%;
-      transition: width 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 0.875rem;
-    }
-
-    .progress-details {
-      display: flex;
-      justify-content: space-between;
-      color: #9e9e9e;
-      font-size: 0.875rem;
-    }
-
-    @media (max-width: 768px) {
-      .header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .nav-tabs {
-        width: 100%;
-        flex-wrap: wrap;
-      }
-
-      .nav-tab {
-        flex: 1;
-        min-width: fit-content;
-      }
-
-      .content {
-        padding: 1rem;
-      }
-
-      .filters {
-        grid-template-columns: 1fr;
-      }
-
-      .actions-bar {
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      .actions-bar .btn {
-        width: 100%;
-      }
-
-      .table-container {
-        overflow-x: auto;
-      }
-
-      .table {
-        min-width: 800px;
-      }
-
-      .modal {
-        max-width: 95%;
-      }
-
-      .student-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-      }
-
-      .group-buttons {
-        width: 100%;
-      }
-
-      .group-btn {
-        flex: 1;
-      }
-    }
-
-    /* Print Styles */
-    @media print {
-      body {
-        background: white !important;
-        color: black !important;
-      }
-
-      .header, .filters, .actions-bar, .btn, .btn-icon, .nav-tabs, .modal-overlay, .progress-overlay {
-        display: none !important;
-      }
-
-      .content {
-        padding: 0 !important;
-      }
-
-      .table-container {
-        box-shadow: none !important;
-        border: 1px solid #000 !important;
-      }
-
-      .table {
-        color: black !important;
-      }
-
-      .table thead {
-        background: #e0e0e0 !important;
-        color: black !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .table th, .table td {
-        border: 1px solid #000 !important;
-        padding: 0.5rem !important;
-      }
-
-      .table tbody tr {
-        background: white !important;
-      }
-
-      .badge {
-        border: 1px solid #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .print-header {
-        display: block !important;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #000;
-      }
-
-      .print-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        color: black;
-      }
-
-      .print-info {
-        font-size: 0.875rem;
-        color: #333;
-      }
-
-      .checkbox, .checklist-cell {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      .obs-indicator {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-    }
-
-    .print-header {
-      display: none;
-    }
-  </style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a1a;
+    color: #e0e0e0;
+  }
+
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Header Responsivo */
+  .header {
+    background: #2d2d2d;
+    padding: 1rem;
+    border-bottom: 3px solid #dc3545;
+    text-align: center;
+  }
+
+  .header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #dc3545;
+  }
+
+  .content {
+    flex: 1;
+    padding: 1rem;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Filtros Responsivos */
+  .filters {
+    background: #2d2d2d;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .form-label {
+    font-size: 0.85rem;
+    color: #9e9e9e;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.6rem;
+    border: 2px solid #424242;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+  }
+
+  /* Botões Responsivos */
+  .actions-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.85rem;
+    transition: 0.2s;
+  }
+
+  .btn-primary { background: #dc3545; color: white; }
+  .btn-secondary { background: #424242; color: white; }
+  .btn-success { background: #28a745; color: white; }
+
+  /* Tabela com Scroll Horizontal no Mobile */
+  .table-container {
+    background: #2d2d2d;
+    border-radius: 12px;
+    overflow-x: auto; /* Permite scroll lateral se a tabela for grande */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Garante que a tabela não esmague o texto */
+  }
+
+  .table th, .table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #424242;
+    font-size: 0.9rem;
+  }
+
+  .table thead { background: #dc3545; color: white; }
+
+  /* Célula de Checklist */
+  .checklist-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #dc3545;
+  }
+
+  /* Modais Responsivas */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: #2d2d2d;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 2px solid #dc3545;
+  }
+
+  .modal-large { max-width: 800px; }
+
+  .modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #424242;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-body { padding: 1rem; }
+  .modal-footer { padding: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  /* Login centralizado */
+  .login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 1rem;
+  }
+
+  /* Ajustes para telas muito pequenas */
+  @media (max-width: 480px) {
+    .header-title { font-size: 1.2rem; }
+    .btn { font-size: 0.8rem; padding: 0.6rem; }
+    .actions-bar { grid-template-columns: 1fr 1fr; } /* Botões em duas colunas */
+  }
+</style>
 </head>
 <body>
   <div id="app" class="app-container"></div>
@@ -862,6 +263,105 @@ function filterStudents() {
   });
 }
 
+    window.importSpreadsheet = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+    if (jsonData.length === 0) {
+      alert("A planilha está vazia.");
+      return;
+    }
+
+    // Criar o overlay de progresso visual
+    const progressOverlay = document.createElement('div');
+    progressOverlay.className = 'progress-overlay';
+    progressOverlay.innerHTML = `
+      <div class="progress-container">
+        <div class="progress-title">Importando Alunos</div>
+        <div class="progress-info" id="import-status">Processando...</div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar-fill" id="progress-fill" style="width: 0%">0%</div>
+        </div>
+      </div>`;
+    document.body.appendChild(progressOverlay);
+
+    const statusText = document.getElementById('import-status');
+    const fill = document.getElementById('progress-fill');
+
+    let importedCount = 0;
+
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      
+      // Normalização de colunas (converte nomes para maiúsculo e remove espaços)
+      const cleanRow = {};
+      Object.keys(row).forEach(key => {
+        const normalizedKey = key.toUpperCase().trim().replace(/\s+/g, '_');
+        cleanRow[normalizedKey] = row[key];
+      });
+
+      const serie = String(cleanRow.SERIE || cleanRow.SÉRIE || '');
+      
+      // Busca configuração de projeto existente ou define padrão
+      const config = seriesProjectsConfig[serie] || {
+        projeto1: { nome: 'Projeto 1', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+        projeto2: { nome: 'Projeto 2', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+        projeto3: { nome: 'Projeto 3', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
+      };
+
+      const studentData = {
+        nome_aluno: cleanRow.NOME_ALUNO || cleanRow.ALUNO || cleanRow.NOME || 'Sem Nome',
+        matricula: String(cleanRow.RA || cleanRow.MATRICULA || ''),
+        sede: cleanRow.SEDE || '',
+        serie: serie,
+        nome_turma: cleanRow.NOME_TURMA || cleanRow.TURMA || '',
+        turno: cleanRow.TURNO || '',
+        projetos_config: config,
+        projeto1_etapas: { checklist: [], observacoes: [] },
+        projeto2_etapas: { checklist: [], observacoes: [] },
+        projeto3_etapas: { checklist: [], observacoes: [] },
+        ativo: true
+      };
+
+      statusText.innerHTML = `Enviando: <strong>${studentData.nome_aluno}</strong>`;
+      
+      // Inserção no Supabase
+      const { error } = await _supabase.from('students').insert([studentData]);
+
+      if (!error) {
+        importedCount++;
+      } else {
+        console.error("Erro ao importar aluno:", error);
+      }
+
+      // Atualiza barra de progresso
+      const pct = Math.round(((i + 1) / jsonData.length) * 100);
+      fill.style.width = pct + '%';
+      fill.textContent = pct + '%';
+
+      // Pequeno intervalo para evitar gargalo na API
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    statusText.innerHTML = `<span style="color: #28a745;">${importedCount} alunos importados com sucesso!</span>`;
+    
+    setTimeout(() => {
+      progressOverlay.remove();
+      fetchStudents(); // Recarrega a lista principal
+    }, 2000);
+  };
+
+  reader.readAsArrayBuffer(file);
+  event.target.value = ''; // Reseta o input de arquivo
+};
+
     window.showAddStudentModal = () => {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -890,6 +390,29 @@ function filterStudents() {
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
         <button class="btn btn-success" onclick="saveNewStudent()">Cadastrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
+
+    window.showImportInstructionsModal = () => {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Importar Planilha</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 1rem;">Selecione um arquivo .xlsx ou .csv com as colunas:</p>
+        <code style="display:block; background:#1a1a1a; padding:10px; border-radius:5px; font-size:0.8rem; color:#dc3545">
+          NOME_ALUNO, SEDE, SERIE, NOME_TURMA, RA
+        </code>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="document.getElementById('file-input-hidden').click(); closeModal();">Selecionar Arquivo</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -937,6 +460,94 @@ window.editStudent = (id) => {
       </div>
     </div>`;
   document.body.appendChild(modal);
+};
+
+    window.showProjectConfigModal = () => {
+  const series = getUniqueValues('serie');
+  if (series.length === 0) {
+    alert("Adicione alunos primeiro para gerenciar projetos.");
+    return;
+  }
+
+  const firstSerie = series[0];
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal modal-large">
+      <div class="modal-header">
+        <h2 class="modal-title">Configurar Projetos por Série</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Selecione a Série para Editar</label>
+          <select class="form-input" id="serie-selector-config" onchange="updateProjectConfigDisplay()">
+            ${series.map(s => `<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+        <div id="projects-config-container">
+          ${renderProjectsConfigForSerie(firstSerie)}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-project-config" onclick="saveProjectConfig()">Salvar Alterações para a Série</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
+
+window.updateProjectConfigDisplay = () => {
+  const serie = document.getElementById('serie-selector-config').value;
+  document.getElementById('projects-config-container').innerHTML = renderProjectsConfigForSerie(serie);
+};
+
+window.renderProjectsConfigForSerie = (serie) => {
+  // Se não existir config para a série, cria o padrão
+  if (!seriesProjectsConfig[serie]) {
+    seriesProjectsConfig[serie] = {
+      projeto1: { nome: 'Projeto 1', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+      projeto2: { nome: 'Projeto 2', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+      projeto3: { nome: 'Projeto 3', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
+    };
+  }
+  const config = seriesProjectsConfig[serie];
+
+  return ['projeto1', 'projeto2', 'projeto3'].map(key => `
+    <div class="project-config" style="margin-bottom: 1.5rem; background: #252525; padding: 1rem; border-radius: 8px; border-left: 4px solid #dc3545;">
+      <h3 style="color: #dc3545; margin-bottom: 1rem; text-transform: uppercase; font-size: 0.9rem;">${key}</h3>
+      <div class="form-group">
+        <label class="form-label">Nome do Projeto</label>
+        <input type="text" class="form-input" id="name-${key}" value="${config[key].nome}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Etapas do Checklist</label>
+        <div id="list-${key}">
+          ${config[key].etapas.map((etapa, idx) => `
+            <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem;">
+              <input type="text" class="form-input step-${key}" value="${etapa}">
+            </div>
+          `).join('')}
+        </div>
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+          <button class="btn btn-secondary btn-small" onclick="addStepRow('${key}')">+ Etapa</button>
+          <button class="btn btn-secondary btn-small" onclick="removeStepRow('${key}')">- Remover</button>
+        </div>
+      </div>
+    </div>`).join('');
+};
+
+window.addStepRow = (key) => {
+  const container = document.getElementById(`list-${key}`);
+  const div = document.createElement('div');
+  div.style = "display:flex; gap:0.5rem; margin-bottom:0.5rem;";
+  div.innerHTML = `<input type="text" class="form-input step-${key}" value="Nova Etapa">`;
+  container.appendChild(div);
+};
+
+window.removeStepRow = (key) => {
+  const container = document.getElementById(`list-${key}`);
+  if (container.children.length > 1) container.removeChild(container.lastChild);
 };
 
 window.showObservationModal = (studentId, projectKey, stageIndex) => {
@@ -1144,10 +755,17 @@ function renderCurrentView() {
 }
 
 function showMainApp() {
-  return `<div class="header"><h1 class="header-title">${defaultConfig.system_title}</h1></div>
-          <div class="content">${showChecklistView()}</div>`;
+    return `
+    <div class="header">
+        <h1 class="header-title">${defaultConfig.system_title}</h1>
+        <button class="btn btn-secondary btn-small" onclick="handleLogout()" style="width: auto; padding: 0.5rem 1rem;">
+            Sair
+        </button>
+    </div>
+    <div class="content">
+        ${showChecklistView()}
+    </div>`;
 }
-
 function closeModal() { document.querySelector('.modal-overlay')?.remove(); }
 
 document.addEventListener('DOMContentLoaded', renderCurrentView);
