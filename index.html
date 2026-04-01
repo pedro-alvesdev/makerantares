@@ -839,9 +839,9 @@ function showChecklistView() {
     </div>
 
     <div class="actions-bar">
-        <button class="btn btn-secondary" onclick="showImportInstructionsModal()">
-            <i class="fa-solid fa-file-import"></i> Importar
-        </button>
+        <button class="btn btn-secondary" onclick="exportToExcel()">
+    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+</button>
         <button class="btn btn-success" onclick="showAddStudentModal()">
             <i class="fa-solid fa-user-plus"></i> Adicionar
         </button>
@@ -916,9 +916,61 @@ function showChecklistView() {
     </div>`;
 }
 
+    window.exportToExcel = () => {
+    const filteredStudents = filterStudents(); // Pega os alunos filtrados na tela
+    if (filteredStudents.length === 0) {
+        alert("Não há dados para exportar com os filtros atuais.");
+        return;
+    }
+
+    const selectedProjectKey = filters.projeto || 'projeto1';
+    
+    // 1. Define o cabeçalho dinâmico com base nas etapas do projeto atual
+    let projConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
+    if (filters.serie && seriesProjectsConfig[filters.serie]) {
+        projConfig = seriesProjectsConfig[filters.serie][selectedProjectKey];
+    }
+
+    // 2. Prepara os dados linha por linha
+    const dataToExport = filteredStudents.map(student => {
+        const studentProjectData = getStudentProjectData(student, selectedProjectKey);
+        const checklist = studentProjectData.checklist || [];
+        const observacoes = studentProjectData.observacoes || [];
+
+        // Informações básicas
+        const row = {
+            "Nome do Aluno": student.nome_aluno,
+            "Sede": student.sede,
+            "Série": student.serie,
+            "Turma": student.nome_turma,
+            "Sala": student.grupo || 'Não atribuída',
+            "Status": (projConfig.etapas.length > 0 && checklist.length >= projConfig.etapas.length && checklist.every(v => v === true)) ? "CONCLUÍDO" : "EM ANDAMENTO"
+        };
+
+        // Adiciona as etapas dinamicamente como colunas
+        projConfig.etapas.forEach((etapa, index) => {
+            const statusEtapa = checklist[index] ? "OK" : "Pendente";
+            const obsEtapa = observacoes[index] ? ` (Obs: ${observacoes[index]})` : "";
+            row[etapa] = statusEtapa + obsEtapa;
+        });
+
+        return row;
+    });
+
+    // 3. Gera a planilha usando a biblioteca SheetJS (xlsx)
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio_Maker");
+
+    // 4. Define o nome do arquivo com a data atual e filtros
+    const fileName = `Relatorio_Maker_${filters.serie || 'Geral'}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
+
+    // 5. Dispara o download
+    XLSX.writeFile(workbook, fileName);
+};
+
     window.showGroupAssignmentModal = () => {
-    const series = getUniqueValues('serie');
-    const firstSerie = series[0] || '';
+    const sedes = getUniqueValues('sede');
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -929,23 +981,29 @@ function showChecklistView() {
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="filters" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                <div class="filters" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-bottom: 1rem; background: #1a1a1a; padding: 10px;">
                     <div class="filter-group">
-                        <label class="form-label">Filtrar Série</label>
-                        <select class="form-input" id="modal-filter-serie" onchange="renderGroupList()">
+                        <label class="form-label">Sede</label>
+                        <select class="form-input" id="modal-filter-sede" onchange="updateModalFilters()">
                             <option value="">Todas</option>
-                            ${series.map(s => `<option value="${s}">${s}</option>`).join('')}
+                            ${sedes.map(s => `<option value="${s}">${s}</option>`).join('')}
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label class="form-label">Filtrar Turma</label>
+                        <label class="form-label">Série</label>
+                        <select class="form-input" id="modal-filter-serie" onchange="updateModalFilters()">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="form-label">Turma</label>
                         <select class="form-input" id="modal-filter-turma" onchange="renderGroupList()">
                             <option value="">Todas</option>
-                            ${getUniqueValues('nome_turma').map(t => `<option value="${t}">${t}</option>`).join('')}
                         </select>
                     </div>
                 </div>
-                <div id="group-list-container" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                
+                <div id="group-list-container" style="max-height: 400px; overflow-y: auto; padding-right: 5px; margin-top: 10px;">
                     </div>
             </div>
             <div class="modal-footer">
@@ -953,30 +1011,53 @@ function showChecklistView() {
             </div>
         </div>`;
     document.body.appendChild(modal);
-    renderGroupList();
+    updateModalFilters(); // Inicializa os filtros e a lista
+};
+    window.updateModalFilters = () => {
+    const sedeVal = document.getElementById('modal-filter-sede').value;
+    const serieSelect = document.getElementById('modal-filter-serie');
+    const turmaSelect = document.getElementById('modal-filter-turma');
+
+    // Atualiza as Séries com base na Sede escolhida
+    const series = getFilteredUniqueValues('serie', { sede: sedeVal });
+    const currentSerie = serieSelect.value;
+    serieSelect.innerHTML = '<option value="">Todas</option>' + 
+        series.map(s => `<option value="${s}" ${s === currentSerie ? 'selected' : ''}>${s}</option>`).join('');
+
+    // Atualiza as Turmas com base na Sede e Série escolhidas
+    const turmas = getFilteredUniqueValues('nome_turma', { sede: sedeVal, serie: serieSelect.value });
+    const currentTurma = turmaSelect.value;
+    turmaSelect.innerHTML = '<option value="">Todas</option>' + 
+        turmas.map(t => `<option value="${t}" ${t === currentTurma ? 'selected' : ''}>${t}</option>`).join('');
+
+    renderGroupList(); // Atualiza a lista de alunos logo em seguida
 };
 
 window.renderGroupList = () => {
+    const sedeFiltro = document.getElementById('modal-filter-sede').value;
     const serieFiltro = document.getElementById('modal-filter-serie').value;
     const turmaFiltro = document.getElementById('modal-filter-turma').value;
     const container = document.getElementById('group-list-container');
 
     let filtered = students;
+    if (sedeFiltro) filtered = filtered.filter(s => s.sede === sedeFiltro);
     if (serieFiltro) filtered = filtered.filter(s => s.serie === serieFiltro);
     if (turmaFiltro) filtered = filtered.filter(s => s.nome_turma === turmaFiltro);
 
     container.innerHTML = filtered.map(student => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; background: #252525; margin-bottom: 5px; border-radius: 8px;">
             <div>
-                <div style="font-weight: 600;">${student.nome_aluno}</div>
-                <div style="font-size: 0.75rem; color: #999;">${student.nome_turma}</div>
+                <div style="font-weight: 600; color: #fff;">${student.nome_aluno}</div>
+                <div style="font-size: 0.75rem; color: #999;">${student.sede} | ${student.serie} - ${student.nome_turma}</div>
             </div>
             <div style="display: flex; gap: 5px;">
                 <button class="btn ${student.grupo === 'A' ? 'btn-primary' : 'btn-secondary'}" 
-                    style="padding: 5px 10px;" onclick="updateStudentGroup('${student.id}', 'A')">A</button>
-                <button class="btn ${student.grupo === 'B' ? 'btn-secondary' : 'btn-secondary'}" 
-                    style="padding: 5px 10px; background: ${student.grupo === 'B' ? '#666' : ''}" onclick="updateStudentGroup('${student.id}', 'B')">B</button>
-                <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.7rem;" onclick="updateStudentGroup('${student.id}', '')">Limpar</button>
+                    style="padding: 5px 12px; min-width: 40px;" onclick="updateStudentGroup('${student.id}', 'A')">A</button>
+                <button class="btn ${student.grupo === 'B' ? 'btn-primary' : 'btn-secondary'}" 
+                    style="padding: 5px 12px; min-width: 40px; ${student.grupo === 'B' ? 'background: #666;' : ''}" onclick="updateStudentGroup('${student.id}', 'B')">B</button>
+                <button class="btn btn-secondary" style="padding: 5px 8px; font-size: 0.7rem; opacity: 0.7;" onclick="updateStudentGroup('${student.id}', '')">
+                    <i class="fa-solid fa-eraser"></i>
+                </button>
             </div>
         </div>
     `).join('') || '<p style="text-align:center; color:#999; padding: 20px;">Nenhum aluno encontrado.</p>';
