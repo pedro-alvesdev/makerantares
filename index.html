@@ -796,7 +796,7 @@
   <input type="file" id="file-input-hidden" accept=".xlsx,.xls,.csv" style="display: none;" onchange="importSpreadsheet(event)">
 
   <script>
-    // 1. CONFIGURAÇÕES E CONEXÃO
+   // 1. CONFIGURAÇÕES E CONEXÃO
 const SUPABASE_URL = 'https://ddowzcnpbhrlsjtkdivz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_G1nqjS9ka2hmsVEEHPjd2A_OMLW9dTu'; 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -815,129 +815,10 @@ const filters = {
   sede: '',
   serie: '',
   turma: '',
-  grupo: '',
-  projeto: ''
+  projeto: 'projeto1'
 };
 
-    window.showImportInstructionsModal = () => {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title">Importar Alunos</h2>
-        <button class="close-btn" onclick="closeModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="color: #e0e0e0; margin-bottom: 1rem;">Certifique-se de que sua planilha tenha as colunas:</p>
-        <ul style="color: #9e9e9e; font-size: 0.9rem; margin-bottom: 1.5rem;">
-          <li><strong>NOME_ALUNO</strong>, <strong>SEDE</strong>, <strong>SERIE</strong>, <strong>NOME_TURMA</strong>, <strong>TURNO</strong>, <strong>RA</strong></li>
-        </ul>
-        <div style="background: rgba(220, 53, 69, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid #dc3545;">
-          <p style="color: #dc3545; font-size: 0.85rem; margin: 0;"><strong>Nota:</strong> A importação para o banco de dados online pode levar alguns segundos dependendo da quantidade de alunos.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="document.getElementById('file-input-hidden').click(); closeModal();">Selecionar Arquivo</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-};
-
-window.importSpreadsheet = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, { type: 'array' });
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-    if (jsonData.length === 0) return;
-
-    // Criar overlay de progresso
-    const progressOverlay = document.createElement('div');
-    progressOverlay.className = 'progress-overlay';
-    progressOverlay.innerHTML = `
-      <div class="progress-container">
-        <div class="progress-title">Importando para o Supabase</div>
-        <div class="progress-info" id="import-status">Iniciando...</div>
-        <div class="progress-bar-wrapper">
-          <div class="progress-bar-fill" id="progress-fill" style="width: 0%">0%</div>
-        </div>
-      </div>`;
-    document.body.appendChild(progressOverlay);
-
-    const statusText = document.getElementById('import-status');
-    const fill = document.getElementById('progress-fill');
-
-    let imported = 0;
-    for (let i = 0; i < jsonData.length; i++) {
-      const row = jsonData[i];
-      
-      // Normaliza nomes de colunas (converte para maiúsculo e remove espaços)
-      const cleanRow = {};
-      Object.keys(row).forEach(key => {
-        cleanRow[key.toUpperCase().trim().replace(/\s+/g, '_')] = row[key];
-      });
-
-      const serie = cleanRow.SERIE || cleanRow.SÉRIE || '';
-      
-      // Define a configuração padrão de projeto se a série ainda não existir
-      const config = seriesProjectsConfig[serie] || {
-        projeto1: { nome: `Projeto 1`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-        projeto2: { nome: `Projeto 2`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-        projeto3: { nome: `Projeto 3`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
-      };
-
-      const studentData = {
-        nome_aluno: cleanRow.NOME_ALUNO || cleanRow.NOME || 'Aluno sem nome',
-        matricula: String(cleanRow.RA || cleanRow.MATRICULA || ''),
-        sede: cleanRow.SEDE || '',
-        serie: serie,
-        nome_turma: cleanRow.NOME_TURMA || cleanRow.TURMA || '',
-        turno: cleanRow.TURNO || '',
-        projetos_config: config,
-        projeto1_etapas: { ...config.projeto1, checklist: [], observacoes: [] },
-        projeto2_etapas: { ...config.projeto2, checklist: [], observacoes: [] },
-        projeto3_etapas: { ...config.projeto3, checklist: [], observacoes: [] },
-        ativo: true
-      };
-
-      statusText.innerHTML = `Enviando: <strong>${studentData.nome_aluno}</strong>`;
-      
-      const { error } = await _supabase.from('students').insert([studentData]);
-
-      if (!error) {
-        imported++;
-      } else {
-        console.error("Erro na linha " + i, error);
-      }
-
-      // Atualiza barra de progresso
-      const pct = Math.round(((i + 1) / jsonData.length) * 100);
-      fill.style.width = pct + '%';
-      fill.textContent = pct + '%';
-      
-      // Pequena pausa para não sobrecarregar a conexão
-      await new Promise(r => setTimeout(r, 100));
-    }
-
-    statusText.innerHTML = `<span style="color: #28a745;">Sucesso! ${imported} alunos importados.</span>`;
-    setTimeout(async () => {
-      progressOverlay.remove();
-      await fetchStudents(); // Atualiza a lista na tela
-    }, 2000);
-  };
-
-  reader.readAsArrayBuffer(file);
-  event.target.value = ''; // Limpa o input
-};
-
-// 2. BUSCA DE DADOS
+// 2. BUSCA E FILTRAGEM
 async function fetchStudents() {
   const { data, error } = await _supabase
     .from('students')
@@ -947,11 +828,7 @@ async function fetchStudents() {
   if (error) {
     console.error("Erro ao buscar alunos:", error);
   } else {
-    students = data.map(s => ({
-      ...s,
-      __backendId: s.id // Mantém compatibilidade com a interface
-    }));
-
+    students = data.map(s => ({ ...s, __backendId: s.id }));
     students.forEach(student => {
       if (student.serie && student.projetos_config) {
         try {
@@ -965,16 +842,14 @@ async function fetchStudents() {
   }
 }
 
-// 3. FUNÇÕES DE UTILIDADE (FILTROS)
 function getUniqueValues(key) {
   return [...new Set(students.map(s => s[key]).filter(Boolean))].sort();
 }
 
-function getFilteredUniqueValues(baseKey, dependencies = {}) {
+function getFilteredUniqueValues(baseKey, currentFilters = {}) {
   let filtered = students;
-  for (const [key, value] of Object.entries(dependencies)) {
-    if (value) filtered = filtered.filter(s => s[key] === value);
-  }
+  if (currentFilters.sede) filtered = filtered.filter(s => s.sede === currentFilters.sede);
+  if (currentFilters.serie) filtered = filtered.filter(s => s.serie === currentFilters.serie);
   return [...new Set(filtered.map(s => s[baseKey]).filter(Boolean))].sort();
 }
 
@@ -983,65 +858,33 @@ function filterStudents() {
     if (filters.sede && student.sede !== filters.sede) return false;
     if (filters.serie && student.serie !== filters.serie) return false;
     if (filters.turma && student.nome_turma !== filters.turma) return false;
-    if (filters.grupo && student.grupo !== filters.grupo) return false;
     return true;
   });
-}
-
-function getProjectProgress(student, projectKey) {
-  const studentData = getStudentProjectData(student, projectKey);
-  if (!studentData.checklist) return { completed: 0, total: 3 };
-  return { 
-    completed: studentData.checklist.filter(v => v).length, 
-    total: studentData.checklist.length || 3 
-  };
 }
 
 function getStudentProjectData(student, projectKey) {
   let data = student[projectKey + '_etapas'];
   if (!data) return { checklist: [], observacoes: [] };
-  try {
-    return typeof data === 'string' ? JSON.parse(data) : data;
-  } catch (e) { return { checklist: [], observacoes: [] }; }
+  return typeof data === 'string' ? JSON.parse(data) : data;
 }
 
-// 4. AÇÕES DO SISTEMA (CRUD SUPABASE)
-window.saveNewStudent = async () => {
-  const form = document.getElementById('add-student-form');
-  const formData = new FormData(form);
-  const serie = formData.get('serie');
-  const btn = event.target;
+// 3. AÇÕES (CRUD)
+window.updateFilter = (key, value) => {
+  filters[key] = value;
+  if (key === 'sede') { filters.serie = ''; filters.turma = ''; }
+  else if (key === 'serie') { filters.turma = ''; }
+  renderCurrentView();
+};
 
-  const config = seriesProjectsConfig[serie] || {
-    projeto1: { nome: `Projeto 1 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-    projeto2: { nome: `Projeto 2 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-    projeto3: { nome: `Projeto 3 - ${serie}`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
-  };
-
-  const studentData = {
-    nome_aluno: formData.get('nome_aluno'),
-    matricula: formData.get('matricula'),
-    sede: formData.get('sede'),
-    serie: serie,
-    nome_turma: formData.get('nome_turma'),
-    turno: formData.get('turno'),
-    grupo: formData.get('grupo') || '',
-    projetos_config: config,
-    projeto1_etapas: { ...config.projeto1, checklist: [], observacoes: [] },
-    projeto2_etapas: { ...config.projeto2, checklist: [], observacoes: [] },
-    projeto3_etapas: { ...config.projeto3, checklist: [], observacoes: [] },
-    ativo: true
-  };
-
-  btn.disabled = true;
-  const { error } = await _supabase.from('students').insert([studentData]);
-  if (!error) { closeModal(); await fetchStudents(); }
-  else { alert("Erro ao salvar"); btn.disabled = false; }
+window.clearFilters = () => {
+  filters.sede = ''; filters.serie = ''; filters.turma = ''; filters.projeto = 'projeto1';
+  renderCurrentView();
 };
 
 window.toggleStage = async (id, projectKey, stageIndex, checked) => {
   const student = students.find(s => s.id === id);
   let data = getStudentProjectData(student, projectKey);
+  if(!data.checklist) data.checklist = [];
   data.checklist[stageIndex] = checked;
 
   await _supabase.from('students').update({ [projectKey + '_etapas']: data }).eq('id', id);
@@ -1053,7 +896,6 @@ window.saveObservation = async (studentId, projectKey, stageIndex) => {
   const student = students.find(s => s.id === studentId);
   const obsText = document.getElementById('obs-text').value;
   let data = getStudentProjectData(student, projectKey);
-  
   if (!data.observacoes) data.observacoes = [];
   data.observacoes[stageIndex] = obsText;
 
@@ -1063,321 +905,152 @@ window.saveObservation = async (studentId, projectKey, stageIndex) => {
   renderCurrentView();
 };
 
-window.updateStudent = async (id) => {
-  const form = document.getElementById('edit-student-form');
+window.saveNewStudent = async () => {
+  const form = document.getElementById('add-student-form');
   const formData = new FormData(form);
-  const updatedData = {
-    matricula: formData.get('matricula'),
-    nome_aluno: formData.get('nome_aluno'),
-    sede: formData.get('sede'),
-    serie: formData.get('serie'),
-    nome_turma: formData.get('nome_turma'),
-    turno: formData.get('turno'),
-    grupo: formData.get('grupo')
+  const serie = formData.get('serie');
+
+  const config = seriesProjectsConfig[serie] || {
+    projeto1: { nome: `Projeto 1`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+    projeto2: { nome: `Projeto 2`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
+    projeto3: { nome: `Projeto 3`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
   };
 
-  const { error } = await _supabase.from('students').update(updatedData).eq('id', id);
+  const studentData = {
+    nome_aluno: formData.get('nome_aluno'),
+    serie: serie,
+    nome_turma: formData.get('nome_turma'),
+    projetos_config: config,
+    projeto1_etapas: { ...config.projeto1, checklist: [], observacoes: [] },
+    projeto2_etapas: { ...config.projeto2, checklist: [], observacoes: [] },
+    projeto3_etapas: { ...config.projeto3, checklist: [], observacoes: [] },
+    ativo: true
+  };
+
+  const { error } = await _supabase.from('students').insert([studentData]);
   if (!error) { closeModal(); await fetchStudents(); }
 };
 
-window.confirmRemoveStudent = async (id) => {
-  await _supabase.from('students').update({ ativo: false }).eq('id', id);
-  closeModal();
-  await fetchStudents();
-};
+window.saveProjectConfig = async () => {
+  const btn = document.getElementById('btn-save-project-config');
+  const serie = document.getElementById('serie-selector').value;
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
 
-// --- SEÇÃO 5: INTERFACE E RENDERIZAÇÃO ---
-
-function showLoginScreen() {
-    return `
-    <div class="login-screen">
-        <div class="login-box">
-            <h1 class="login-title">${defaultConfig.system_title}</h1>
-            <p class="login-subtitle">${defaultConfig.welcome_message}</p>
-            <div id="login-error"></div>
-            <form id="login-form">
-                <div class="form-group">
-                    <label class="form-label" for="password-input">Senha de Acesso</label>
-                    <input type="password" id="password-input" class="form-input" placeholder="Digite a senha numérica" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Entrar</button>
-            </form>
-        </div>
-    </div>`;
-}
-
-function showMainApp() {
-    return `
-    <div class="header">
-        <h1 class="header-title">${defaultConfig.system_title}</h1>
-    </div>
-    <div class="content">
-        ${showChecklistView()}
-    </div>`;
-}
-
-function showChecklistView() {
-    const filteredStudents = filterStudents();
-    const sedes = getUniqueValues('sede');
-    const series = getFilteredUniqueValues('serie', { sede: filters.sede });
-    const turmas = getFilteredUniqueValues('nome_turma', { sede: filters.sede, serie: filters.serie });
-
-    const selectedProjectKey = filters.projeto || 'projeto1';
-    const selectedSerie = filters.serie;
-    
-    let projectConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
-    
-    if (selectedSerie && seriesProjectsConfig[selectedSerie]) {
-        projectConfig = seriesProjectsConfig[selectedSerie][selectedProjectKey];
-    } else if (filteredStudents.length > 0) {
-        const firstStudent = filteredStudents[0];
-        if (firstStudent.serie && seriesProjectsConfig[firstStudent.serie]) {
-            projectConfig = seriesProjectsConfig[firstStudent.serie][selectedProjectKey];
-        }
-    }
-
-    return `
-    <div class="filters">
-        <div class="filter-group">
-            <label class="form-label">Sede</label>
-            <select class="form-input" onchange="updateFilter('sede', this.value)">
-                <option value="">Todas</option>
-                ${sedes.map(s => `<option value="${s}" ${filters.sede === s ? 'selected' : ''}>${s}</option>`).join('')}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label class="form-label">Série</label>
-            <select class="form-input" onchange="updateFilter('serie', this.value)">
-                <option value="">Todas</option>
-                ${series.map(s => `<option value="${s}" ${filters.serie === s ? 'selected' : ''}>${s}</option>`).join('')}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label class="form-label">Turma</label>
-            <select class="form-input" onchange="updateFilter('turma', this.value)">
-                <option value="">Todas</option>
-                ${turmas.map(t => `<option value="${t}" ${filters.turma === t ? 'selected' : ''}>${t}</option>`).join('')}
-            </select>
-        </div>
-        <div class="filter-group">
-            <label class="form-label">Projeto</label>
-            <select class="form-input" onchange="updateFilter('projeto', this.value)">
-                <option value="projeto1" ${filters.projeto === 'projeto1' ? 'selected' : ''}>Projeto 1</option>
-                <option value="projeto2" ${filters.projeto === 'projeto2' ? 'selected' : ''}>Projeto 2</option>
-                <option value="projeto3" ${filters.projeto === 'projeto3' ? 'selected' : ''}>Projeto 3</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="actions-bar">
-        <button class="btn btn-secondary" onclick="showImportInstructionsModal()">Importar</button>
-        <button class="btn btn-success" onclick="showAddStudentModal()">+ Adicionar</button>
-        <button class="btn btn-secondary" onclick="showGroupAssignmentModal()">Atribuir Salas</button>
-        <button class="btn btn-secondary" onclick="showProjectConfigModal()">Projetos</button>
-        <button class="btn btn-secondary" onclick="printChecklist()">Imprimir</button>
-        <button class="btn btn-secondary" onclick="clearFilters()">Limpar</button>
-    </div>
-
-    <div class="table-container">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Aluno</th>
-                    <th>Sala</th>
-                    ${projectConfig.etapas.map(etapa => `<th>${etapa}</th>`).join('')}
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${filteredStudents.map((student, index) => {
-                    const studentData = getStudentProjectData(student, selectedProjectKey);
-                    const checklist = studentData.checklist || [];
-                    const obs = studentData.observacoes || [];
-                    const isComplete = checklist.length >= projectConfig.etapas.length && checklist.every(item => item === true);
-
-                    return `
-                    <tr>
-                        <td>
-                            <strong>${student.nome_aluno}</strong>
-                            <div style="font-size: 0.8rem; color: #999;">${student.nome_turma}</div>
-                            ${isComplete ? '<span class="completion-badge">Completo</span>' : ''}
-                        </td>
-                        <td>${student.grupo ? `<span class="badge badge-lado-${student.grupo.toLowerCase()}">${student.grupo}</span>` : '-'}</td>
-                        ${projectConfig.etapas.map((_, idx) => `
-                            <td>
-                                <div class="checklist-cell">
-                                    <button class="btn-icon" onclick="showObservationModal('${student.id}', '${selectedProjectKey}', ${idx})">Obs</button>
-                                    ${obs[idx] ? '<span class="obs-indicator"></span>' : ''}
-                                    <input type="checkbox" class="checkbox" ${checklist[idx] ? 'checked' : ''} 
-                                        onchange="toggleStage('${student.id}', '${selectedProjectKey}', ${idx}, this.checked)">
-                                </div>
-                            </td>
-                        `).join('')}
-                        <td>
-                            <button class="btn btn-secondary btn-small" onclick="editStudent('${student.id}')">Editar</button>
-                        </td>
-                    </tr>`;
-                }).join('')}
-            </tbody>
-        </table>
-    </div>`;
-}
-
-window.showObservationModal = (studentId, projectKey, stageIndex) => {
-    const student = students.find(s => s.id === studentId);
-    if (!student) return;
-
-    const data = getStudentProjectData(student, projectKey);
-    const currentObs = data.observacoes ? (data.observacoes[stageIndex] || '') : '';
-
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Observação - Etapa ${stageIndex + 1}</h2>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Aluno: <strong>${student.nome_aluno}</strong></p>
-                <textarea id="obs-text" class="form-input" rows="5" placeholder="Digite aqui...">${currentObs}</textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveObservation('${studentId}', '${projectKey}', ${stageIndex})">Salvar</button>
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
-};
-
-window.editStudent = (id) => {
-    const student = students.find(s => s.id === id);
-    if (!student) return;
-
-    const allSeries = getUniqueValues('serie');
-    const allTurmas = getUniqueValues('nome_turma');
-
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Editar Aluno</h2>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="edit-student-form">
-                    <div class="form-group">
-                        <label class="form-label">Nome Completo</label>
-                        <input type="text" class="form-input" name="nome_aluno" value="${student.nome_aluno}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Matrícula/RA</label>
-                        <input type="text" class="form-input" name="matricula" value="${student.matricula || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Sede</label>
-                        <input type="text" class="form-input" name="sede" value="${student.sede || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Série</label>
-                        <input type="text" class="form-input" name="serie" value="${student.serie || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Turma</label>
-                        <input type="text" class="form-input" name="nome_turma" value="${student.nome_turma || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Parte da Sala (A/B)</label>
-                        <select class="form-input" name="grupo">
-                            <option value="" ${!student.grupo ? 'selected' : ''}>Nenhum</option>
-                            <option value="A" ${student.grupo === 'A' ? 'selected' : ''}>Lado A</option>
-                            <option value="B" ${student.grupo === 'B' ? 'selected' : ''}>Lado B</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="removeStudent('${id}')">Remover</button>
-                <button class="btn btn-primary" onclick="updateStudent('${id}')">Salvar</button>
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
-};
-
-window.showAddStudentModal = () => {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Novo Aluno</h2>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="add-student-form">
-                    <div class="form-group">
-                        <label class="form-label">Nome Completo</label>
-                        <input type="text" class="form-input" name="nome_aluno" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Série</label>
-                        <input type="text" class="form-input" name="serie" placeholder="Ex: 8 ano" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Turma</label>
-                        <input type="text" class="form-input" name="nome_turma" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                <button class="btn btn-success" onclick="saveNewStudent()">Cadastrar</button>
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
-};
-
-window.closeModal = () => {
-    const modal = document.querySelector('.modal-overlay');
-    if (modal) modal.remove();
-};
-
-window.removeStudent = (id) => {
-    if(confirm("Deseja realmente arquivar este aluno?")) {
-        confirmRemoveStudent(id);
-    }
-};
-
-function setupLoginForm() {
-  const form = document.getElementById('login-form');
-  if (!form) return;
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = document.getElementById('password-input').value.trim();
-    if (password === '123456') {
-      isAuthenticated = true;
-      await fetchStudents();
-    } else {
-      document.getElementById('login-error').innerHTML = '<div class="error-message">Senha incorreta.</div>';
-    }
+  const newConfig = {};
+  ['projeto1', 'projeto2', 'projeto3'].forEach(key => {
+    const nome = document.getElementById(`config-${key}-nome`).value;
+    const inputs = document.querySelectorAll(`.stage-input-${key}`);
+    const etapas = Array.from(inputs).map(input => input.value);
+    newConfig[key] = { nome, etapas };
   });
+
+  const studentsToUpdate = students.filter(s => s.serie === serie);
+  for (const student of studentsToUpdate) {
+      const p1 = getStudentProjectData(student, 'projeto1');
+      const p2 = getStudentProjectData(student, 'projeto2');
+      const p3 = getStudentProjectData(student, 'projeto3');
+      const payload = {
+          projetos_config: newConfig,
+          projeto1_etapas: { ...p1, nome: newConfig.projeto1.nome, etapas: newConfig.projeto1.etapas },
+          projeto2_etapas: { ...p2, nome: newConfig.projeto2.nome, etapas: newConfig.projeto2.etapas },
+          projeto3_etapas: { ...p3, nome: newConfig.projeto3.nome, etapas: newConfig.projeto3.etapas }
+      };
+      await _supabase.from('students').update(payload).eq('id', student.id);
+  }
+  seriesProjectsConfig[serie] = newConfig;
+  closeModal(); await fetchStudents();
+};
+
+// 4. INTERFACE (MODAIS E TABELAS)
+function showChecklistView() {
+  const filteredStudents = filterStudents();
+  const sedes = getUniqueValues('sede');
+  const series = getFilteredUniqueValues('serie', { sede: filters.sede });
+  const turmas = getFilteredUniqueValues('nome_turma', { sede: filters.sede, serie: filters.serie });
+  const selectedProjectKey = filters.projeto;
+  
+  let projConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
+  if (filters.serie && seriesProjectsConfig[filters.serie]) {
+    projConfig = seriesProjectsConfig[filters.serie][selectedProjectKey];
+  }
+
+  return `
+    <div class="filters">
+      <div class="filter-group"><label class="form-label">Sede</label>
+        <select class="form-input" onchange="updateFilter('sede', this.value)">
+          <option value="">Todas</option>${sedes.map(s => `<option value="${s}" ${filters.sede === s ? 'selected' : ''}>${s}</option>`).join('')}
+        </select></div>
+      <div class="filter-group"><label class="form-label">Série</label>
+        <select class="form-input" onchange="updateFilter('serie', this.value)">
+          <option value="">Todas</option>${series.map(s => `<option value="${s}" ${filters.serie === s ? 'selected' : ''}>${s}</option>`).join('')}
+        </select></div>
+      <div class="filter-group"><label class="form-label">Turma</label>
+        <select class="form-input" onchange="updateFilter('turma', this.value)">
+          <option value="">Todas</option>${turmas.map(t => `<option value="${t}" ${filters.turma === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select></div>
+      <div class="filter-group"><label class="form-label">Projeto</label>
+        <select class="form-input" onchange="updateFilter('projeto', this.value)">
+          <option value="projeto1" ${filters.projeto === 'projeto1' ? 'selected' : ''}>Projeto 1</option>
+          <option value="projeto2" ${filters.projeto === 'projeto2' ? 'selected' : ''}>Projeto 2</option>
+          <option value="projeto3" ${filters.projeto === 'projeto3' ? 'selected' : ''}>Projeto 3</option>
+        </select></div>
+    </div>
+    <div class="actions-bar">
+      <button class="btn btn-secondary" onclick="showImportInstructionsModal()">Importar</button>
+      <button class="btn btn-success" onclick="showAddStudentModal()">+ Adicionar</button>
+      <button class="btn btn-secondary" onclick="showProjectConfigModal()">Projetos</button>
+      <button class="btn btn-secondary" onclick="clearFilters()">Limpar Filtros</button>
+    </div>
+    <div class="table-container">
+      <table class="table">
+        <thead><tr><th>Aluno</th>${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}<th>Ações</th></tr></thead>
+        <tbody>
+          ${filteredStudents.map(student => {
+            const data = getStudentProjectData(student, selectedProjectKey);
+            return `<tr>
+              <td><strong>${student.nome_aluno}</strong><div style="font-size:0.8rem;color:#999">${student.nome_turma}</div></td>
+              ${projConfig.etapas.map((_, i) => `<td>
+                <button class="btn-icon" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})">Obs</button>
+                <input type="checkbox" class="checkbox" ${(data.checklist&&data.checklist[i])?'checked':''} onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
+              </td>`).join('')}
+              <td><button class="btn btn-secondary btn-small" onclick="editStudent('${student.id}')">Editar</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
+// 5. LOGIN E INICIALIZAÇÃO
 function renderCurrentView() {
   const app = document.getElementById('app');
   if (!isAuthenticated) {
-    app.innerHTML = showLoginScreen();
-    setupLoginForm();
-  } else {
-    app.innerHTML = showMainApp();
-  }
+    app.innerHTML = `<div class="login-screen"><div class="login-box">
+      <h1 class="login-title">${defaultConfig.system_title}</h1>
+      <div id="login-error"></div>
+      <form id="login-form">
+        <div class="form-group"><label class="form-label">Senha</label>
+        <input type="password" id="password-input" class="form-input" required></div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </form></div></div>`;
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (document.getElementById('password-input').value === '123456') {
+        isAuthenticated = true; await fetchStudents();
+      } else { alert("Senha incorreta"); }
+    });
+  } else { app.innerHTML = showMainApp(); }
 }
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', () => {
-  renderCurrentView();
-});
+function showMainApp() {
+  return `<div class="header"><h1 class="header-title">${defaultConfig.system_title}</h1></div>
+          <div class="content">${showChecklistView()}</div>`;
+}
+
+function closeModal() { document.querySelector('.modal-overlay')?.remove(); }
+
+document.addEventListener('DOMContentLoaded', renderCurrentView);
   </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e58f372a280f633',t:'MTc3NTA2MDczOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
