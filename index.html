@@ -6,6 +6,7 @@
   <title>Sistema Maker</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
   * {
     margin: 0;
@@ -19,6 +20,25 @@
     background: #1a1a1a;
     color: #e0e0e0;
   }
+    .badge-lado-a {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.badge-lado-b {
+    background: rgba(108, 117, 125, 0.2);
+    color: #9e9e9e;
+    border: 1px solid #9e9e9e;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
 
   .app-container {
     display: flex;
@@ -27,18 +47,22 @@
   }
 
   /* Header Responsivo */
-  .header {
+.header {
+    display: flex;
+    justify-content: space-between; /* Título na esquerda, botão na direita */
+    align-items: center;            /* Alinha ambos verticalmente ao centro */
     background: #2d2d2d;
-    padding: 1rem;
+    padding: 0.8rem 1.5rem;
     border-bottom: 3px solid #dc3545;
-    text-align: center;
-  }
+    gap: 1rem;                      /* Espaço mínimo entre eles */
+}
 
-  .header-title {
-    font-size: 1.5rem;
+.header-title {
+    font-size: 1.3rem;              /* Ajuste leve no tamanho para caber melhor em telas médias */
     font-weight: 700;
     color: #dc3545;
-  }
+    margin: 0;                      /* Remove margens que podem desalinhá-lo */
+}
 
   .content {
     flex: 1;
@@ -79,6 +103,54 @@
     color: #e0e0e0;
     font-size: 0.9rem;
   }
+    /* Botão de Observação e Editar estilo Ícone */
+.btn-icon-action {
+    background: transparent;
+    border: none;
+    color: #9e9e9e;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+}
+
+.btn-icon-action:hover {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    transform: scale(1.1);
+}
+
+/* Indicador de que existe observação (o pontinho) */
+.obs-container {
+    position: relative;
+    display: inline-block;
+}
+
+.obs-active-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    background-color: #dc3545; /* Vermelho para destacar */
+    border: 2px solid #2d2d2d;
+    border-radius: 50%;
+}
+
+/* Ajuste específico para o lápis de editar */
+.btn-edit {
+    color: #9e9e9e;
+}
+.btn-edit:hover {
+    color: #28a745; /* Verde ao passar o mouse no editar */
+    background: rgba(40, 167, 69, 0.1);
+}
 
   /* Botões Responsivos */
   .actions-bar {
@@ -163,6 +235,24 @@
   }
 
   .modal-large { max-width: 800px; }
+    .status-completo {
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    vertical-align: middle;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
 
   .modal-header {
     padding: 1rem;
@@ -186,7 +276,10 @@
 
   /* Ajustes para telas muito pequenas */
   @media (max-width: 480px) {
-    .header-title { font-size: 1.2rem; }
+    .header {
+        padding: 0.8rem 1rem;
+    }
+    .header-title { font-size: 1rem; }
     .btn { font-size: 0.8rem; padding: 0.6rem; }
     .actions-bar { grid-template-columns: 1fr 1fr; } /* Botões em duas colunas */
   }
@@ -375,21 +468,31 @@ function filterStudents() {
         <form id="add-student-form">
           <div class="form-group">
             <label class="form-label">Nome do Aluno</label>
-            <input type="text" class="form-input" name="nome_aluno" required>
+            <input type="text" class="form-input" name="nome_aluno" placeholder="Nome Completo" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Série</label>
-            <input type="text" class="form-input" name="serie" placeholder="Ex: 8 ano" required>
+            <label class="form-label">Matrícula / RA</label>
+            <input type="text" class="form-input" name="matricula" placeholder="Opcional">
           </div>
           <div class="form-group">
-            <label class="form-label">Turma</label>
-            <input type="text" class="form-input" name="nome_turma" required>
+            <label class="form-label">Sede</label>
+            <input type="text" class="form-input" name="sede" placeholder="Ex: Sede Centro" required>
+          </div>
+          <div class="form-group" style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label class="form-label">Série</label>
+                <input type="text" class="form-input" name="serie" placeholder="Ex: 8 ano" required>
+            </div>
+            <div style="flex: 1;">
+                <label class="form-label">Turma</label>
+                <input type="text" class="form-input" name="nome_turma" placeholder="Ex: A" required>
+            </div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-success" onclick="saveNewStudent()">Cadastrar</button>
+        <button class="btn btn-success" onclick="saveNewStudent()">Cadastrar no Banco</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -617,29 +720,41 @@ window.saveObservation = async (studentId, projectKey, stageIndex) => {
 };
 
 window.saveNewStudent = async () => {
-  const form = document.getElementById('add-student-form');
-  const formData = new FormData(form);
-  const serie = formData.get('serie');
+    const form = document.getElementById('add-student-form');
+    const formData = new FormData(form);
+    
+    // Criamos o objeto com todos os campos necessários
+    const newStudent = {
+        nome_aluno: formData.get('nome_aluno'),
+        matricula: formData.get('matricula'),
+        sede: formData.get('sede'),
+        serie: formData.get('serie'),
+        nome_turma: formData.get('nome_turma'),
+        ativo: true,
+        // Inicializa as colunas de etapas com a estrutura padrão
+        projeto1_etapas: { checklist: [], observacoes: [] },
+        projeto2_etapas: { checklist: [], observacoes: [] },
+        projeto3_etapas: { checklist: [], observacoes: [] }
+    };
 
-  const config = seriesProjectsConfig[serie] || {
-    projeto1: { nome: `Projeto 1`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-    projeto2: { nome: `Projeto 2`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
-    projeto3: { nome: `Projeto 3`, etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] }
-  };
+    // Verificação simples
+    if (!newStudent.nome_aluno || !newStudent.serie) {
+        alert("Por favor, preencha pelo menos Nome e Série.");
+        return;
+    }
 
-  const studentData = {
-    nome_aluno: formData.get('nome_aluno'),
-    serie: serie,
-    nome_turma: formData.get('nome_turma'),
-    projetos_config: config,
-    projeto1_etapas: { ...config.projeto1, checklist: [], observacoes: [] },
-    projeto2_etapas: { ...config.projeto2, checklist: [], observacoes: [] },
-    projeto3_etapas: { ...config.projeto3, checklist: [], observacoes: [] },
-    ativo: true
-  };
+    try {
+        const { error } = await _supabase.from('students').insert([newStudent]);
+        
+        if (error) throw error;
 
-  const { error } = await _supabase.from('students').insert([studentData]);
-  if (!error) { closeModal(); await fetchStudents(); }
+        alert("Aluno cadastrado com sucesso!");
+        closeModal();
+        await fetchStudents(); // Recarrega a tabela principal
+    } catch (err) {
+        console.error("Erro ao inserir:", err);
+        alert("Erro ao salvar o aluno. Verifique a consola.");
+    }
 };
 
 window.saveProjectConfig = async () => {
@@ -675,63 +790,218 @@ window.saveProjectConfig = async () => {
 
 // 4. INTERFACE (MODAIS E TABELAS)
 function showChecklistView() {
-  const filteredStudents = filterStudents();
-  const sedes = getUniqueValues('sede');
-  const series = getFilteredUniqueValues('serie', { sede: filters.sede });
-  const turmas = getFilteredUniqueValues('nome_turma', { sede: filters.sede, serie: filters.serie });
-  const selectedProjectKey = filters.projeto;
-  
-  let projConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
-  if (filters.serie && seriesProjectsConfig[filters.serie]) {
-    projConfig = seriesProjectsConfig[filters.serie][selectedProjectKey];
-  }
+    const filteredStudents = filterStudents();
+    
+    // Obtenção de valores únicos para os filtros encadeados
+    const sedes = getUniqueValues('sede');
+    const series = getFilteredUniqueValues('serie', { sede: filters.sede });
+    const turmas = getFilteredUniqueValues('nome_turma', { sede: filters.sede, serie: filters.serie });
+    
+    const selectedProjectKey = filters.projeto || 'projeto1';
+    
+    // Configuração padrão de etapas caso não exista uma específica para a série
+    let projConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
+    if (filters.serie && seriesProjectsConfig[filters.serie]) {
+        projConfig = seriesProjectsConfig[filters.serie][selectedProjectKey];
+    }
 
-  return `
+    return `
     <div class="filters">
-      <div class="filter-group"><label class="form-label">Sede</label>
-        <select class="form-input" onchange="updateFilter('sede', this.value)">
-          <option value="">Todas</option>${sedes.map(s => `<option value="${s}" ${filters.sede === s ? 'selected' : ''}>${s}</option>`).join('')}
-        </select></div>
-      <div class="filter-group"><label class="form-label">Série</label>
-        <select class="form-input" onchange="updateFilter('serie', this.value)">
-          <option value="">Todas</option>${series.map(s => `<option value="${s}" ${filters.serie === s ? 'selected' : ''}>${s}</option>`).join('')}
-        </select></div>
-      <div class="filter-group"><label class="form-label">Turma</label>
-        <select class="form-input" onchange="updateFilter('turma', this.value)">
-          <option value="">Todas</option>${turmas.map(t => `<option value="${t}" ${filters.turma === t ? 'selected' : ''}>${t}</option>`).join('')}
-        </select></div>
-      <div class="filter-group"><label class="form-label">Projeto</label>
-        <select class="form-input" onchange="updateFilter('projeto', this.value)">
-          <option value="projeto1" ${filters.projeto === 'projeto1' ? 'selected' : ''}>Projeto 1</option>
-          <option value="projeto2" ${filters.projeto === 'projeto2' ? 'selected' : ''}>Projeto 2</option>
-          <option value="projeto3" ${filters.projeto === 'projeto3' ? 'selected' : ''}>Projeto 3</option>
-        </select></div>
+        <div class="filter-group">
+            <label class="form-label">Sede</label>
+            <select class="form-input" onchange="updateFilter('sede', this.value)">
+                <option value="">Todas</option>
+                ${sedes.map(s => `<option value="${s}" ${filters.sede === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="form-label">Série</label>
+            <select class="form-input" onchange="updateFilter('serie', this.value)">
+                <option value="">Todas</option>
+                ${series.map(s => `<option value="${s}" ${filters.serie === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="form-label">Turma</label>
+            <select class="form-input" onchange="updateFilter('turma', this.value)">
+                <option value="">Todas</option>
+                ${turmas.map(t => `<option value="${t}" ${filters.turma === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="form-label">Projeto Atual</label>
+            <select class="form-input" onchange="updateFilter('projeto', this.value)">
+                <option value="projeto1" ${filters.projeto === 'projeto1' ? 'selected' : ''}>Projeto 1</option>
+                <option value="projeto2" ${filters.projeto === 'projeto2' ? 'selected' : ''}>Projeto 2</option>
+                <option value="projeto3" ${filters.projeto === 'projeto3' ? 'selected' : ''}>Projeto 3</option>
+            </select>
+        </div>
     </div>
+
     <div class="actions-bar">
-      <button class="btn btn-secondary" onclick="showImportInstructionsModal()">Importar</button>
-      <button class="btn btn-success" onclick="showAddStudentModal()">+ Adicionar</button>
-      <button class="btn btn-secondary" onclick="showProjectConfigModal()">Projetos</button>
-      <button class="btn btn-secondary" onclick="clearFilters()">Limpar Filtros</button>
+        <button class="btn btn-secondary" onclick="showImportInstructionsModal()">
+            <i class="fa-solid fa-file-import"></i> Importar
+        </button>
+        <button class="btn btn-success" onclick="showAddStudentModal()">
+            <i class="fa-solid fa-user-plus"></i> Adicionar
+        </button>
+        <button class="btn btn-secondary" onclick="showGroupAssignmentModal()">
+            <i class="fa-solid fa-users-rectangle"></i> Atribuir Salas
+        </button>
+        <button class="btn btn-secondary" onclick="showProjectConfigModal()">
+            <i class="fa-solid fa-gear"></i> Projetos
+        </button>
+        <button class="btn btn-secondary" onclick="printChecklist()">
+            <i class="fa-solid fa-print"></i> Imprimir
+        </button>
+        <button class="btn btn-secondary" onclick="clearFilters()">Limpar</button>
     </div>
+
     <div class="table-container">
-      <table class="table">
-        <thead><tr><th>Aluno</th>${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}<th>Ações</th></tr></thead>
-        <tbody>
-          ${filteredStudents.map(student => {
-            const data = getStudentProjectData(student, selectedProjectKey);
-            return `<tr>
-              <td><strong>${student.nome_aluno}</strong><div style="font-size:0.8rem;color:#999">${student.nome_turma}</div></td>
-              ${projConfig.etapas.map((_, i) => `<td>
-                <button class="btn-icon" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})">Obs</button>
-                <input type="checkbox" class="checkbox" ${(data.checklist&&data.checklist[i])?'checked':''} onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
-              </td>`).join('')}
-              <td><button class="btn btn-secondary btn-small" onclick="editStudent('${student.id}')">Editar</button></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Aluno</th>
+                    <th>Sala</th>
+                    ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
+                    <th style="text-align: center;">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredStudents.map(student => {
+                    const data = getStudentProjectData(student, selectedProjectKey);
+                    const checklist = data.checklist || [];
+                    
+                    // Verifica se todas as etapas configuradas estão marcadas
+                    const isProjetoFinalizado = projConfig.etapas.length > 0 && 
+                                                checklist.length >= projConfig.etapas.length && 
+                                                checklist.every(item => item === true);
+
+                    return `
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <strong>${student.nome_aluno}</strong>
+                                ${isProjetoFinalizado ? `<span class="status-completo">Completo</span>` : ''}
+                            </div>
+                            <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
+                        </td>
+                        <td>
+                            ${student.grupo ? `<span class="badge-lado-${student.grupo.toLowerCase()}">Lado ${student.grupo}</span>` : '-'}
+                        </td>
+                        ${projConfig.etapas.map((_, i) => `
+                            <td>
+                                <div class="checklist-cell">
+                                    <div class="obs-container">
+                                        <button class="btn-icon-action" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})" title="Observação">
+                                            <i class="fa-regular fa-comment-dots"></i>
+                                        </button>
+                                        ${(data.observacoes && data.observacoes[i]) ? '<span class="obs-active-dot"></span>' : ''}
+                                    </div>
+                                    <input type="checkbox" class="checkbox" ${(data.checklist && data.checklist[i]) ? 'checked' : ''} 
+                                        onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
+                                </div>
+                            </td>
+                        `).join('')}
+                        <td style="text-align: center;">
+                            <button class="btn-icon-action btn-edit" onclick="editStudent('${student.id}')" title="Editar Aluno">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+        ${filteredStudents.length === 0 ? '<div style="padding: 20px; text-align: center; color: #999;">Nenhum aluno encontrado para os filtros selecionados.</div>' : ''}
     </div>`;
 }
+
+    window.showGroupAssignmentModal = () => {
+    const series = getUniqueValues('serie');
+    const firstSerie = series[0] || '';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title">Atribuir Lado A / B</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="filters" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                    <div class="filter-group">
+                        <label class="form-label">Filtrar Série</label>
+                        <select class="form-input" id="modal-filter-serie" onchange="renderGroupList()">
+                            <option value="">Todas</option>
+                            ${series.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="form-label">Filtrar Turma</label>
+                        <select class="form-input" id="modal-filter-turma" onchange="renderGroupList()">
+                            <option value="">Todas</option>
+                            ${getUniqueValues('nome_turma').map(t => `<option value="${t}">${t}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div id="group-list-container" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Fechar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    renderGroupList();
+};
+
+window.renderGroupList = () => {
+    const serieFiltro = document.getElementById('modal-filter-serie').value;
+    const turmaFiltro = document.getElementById('modal-filter-turma').value;
+    const container = document.getElementById('group-list-container');
+
+    let filtered = students;
+    if (serieFiltro) filtered = filtered.filter(s => s.serie === serieFiltro);
+    if (turmaFiltro) filtered = filtered.filter(s => s.nome_turma === turmaFiltro);
+
+    container.innerHTML = filtered.map(student => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; background: #252525; margin-bottom: 5px; border-radius: 8px;">
+            <div>
+                <div style="font-weight: 600;">${student.nome_aluno}</div>
+                <div style="font-size: 0.75rem; color: #999;">${student.nome_turma}</div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn ${student.grupo === 'A' ? 'btn-primary' : 'btn-secondary'}" 
+                    style="padding: 5px 10px;" onclick="updateStudentGroup('${student.id}', 'A')">A</button>
+                <button class="btn ${student.grupo === 'B' ? 'btn-secondary' : 'btn-secondary'}" 
+                    style="padding: 5px 10px; background: ${student.grupo === 'B' ? '#666' : ''}" onclick="updateStudentGroup('${student.id}', 'B')">B</button>
+                <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.7rem;" onclick="updateStudentGroup('${student.id}', '')">Limpar</button>
+            </div>
+        </div>
+    `).join('') || '<p style="text-align:center; color:#999; padding: 20px;">Nenhum aluno encontrado.</p>';
+};
+
+    window.updateStudentGroup = async (id, grupo) => {
+    // 1. Atualização Visual Imediata (Otimista)
+    const student = students.find(s => s.id === id);
+    if (student) student.grupo = grupo;
+    renderGroupList(); // Atualiza a lista da modal
+
+    // 2. Atualização no Supabase
+    const { error } = await _supabase
+        .from('students')
+        .update({ grupo: grupo })
+        .eq('id', id);
+
+    if (error) {
+        console.error("Erro ao atualizar grupo:", error);
+        alert("Erro ao salvar no banco de dados.");
+    } else {
+        // Atualiza a tabela principal ao fundo
+        renderCurrentView();
+    }
+};
 
 // 5. LOGIN E INICIALIZAÇÃO
 function renderCurrentView() {
@@ -758,8 +1028,8 @@ function showMainApp() {
     return `
     <div class="header">
         <h1 class="header-title">${defaultConfig.system_title}</h1>
-        <button class="btn btn-secondary btn-small" onclick="handleLogout()" style="width: auto; padding: 0.5rem 1rem;">
-            Sair
+        <button class="btn btn-secondary" onclick="handleLogout()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem; background: #444;">
+            <i class="fa-solid fa-right-from-bracket"></i> Sair
         </button>
     </div>
     <div class="content">
