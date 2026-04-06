@@ -473,7 +473,11 @@ async function fetchStudents() {
   if (error) {
     console.error("Erro ao buscar alunos:", error);
   } else {
-    students = data.map(s => ({ ...s, __backendId: s.id }));
+    // Ordena por nome logo na chegada dos dados
+    students = data.sort((a, b) => 
+      a.nome_aluno.localeCompare(b.nome_aluno, 'pt-BR', { sensitivity: 'base' })
+    ).map(s => ({ ...s, __backendId: s.id }));
+
     students.forEach(student => {
       if (student.serie && student.projetos_config) {
         try {
@@ -499,12 +503,17 @@ function getFilteredUniqueValues(baseKey, currentFilters = {}) {
 }
 
 function filterStudents() {
-  return students.filter(student => {
+  const filtered = students.filter(student => {
     if (filters.sede && student.sede !== filters.sede) return false;
     if (filters.serie && student.serie !== filters.serie) return false;
     if (filters.turma && student.nome_turma !== filters.turma) return false;
     return true;
   });
+
+  // Reforça a ordem alfabética após o filtro
+  return filtered.sort((a, b) => 
+    a.nome_aluno.localeCompare(b.nome_aluno, 'pt-BR', { sensitivity: 'base' })
+  );
 }
 
     window.importSpreadsheet = (event) => {
@@ -1060,6 +1069,12 @@ function showChecklistView() {
     <div class="table-container">
         <table class="table">
             <thead>
+            <tr>
+        <th style="width: 40px;">#</th> <th>Aluno</th>
+        <th>Sala</th>
+        ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
+        <th style="text-align: center;">Ação</th>
+    </tr>
                 <tr>
                     <th>Aluno</th>
                     <th>Sala</th>
@@ -1067,50 +1082,53 @@ function showChecklistView() {
                     <th style="text-align: center;">Ação</th>
                 </tr>
             </thead>
-            <tbody>
-                ${filteredStudents.map(student => {
-                    const data = getStudentProjectData(student, selectedProjectKey);
-                    const checklist = data.checklist || [];
-                    
-                    // Verifica se todas as etapas configuradas estão marcadas
-                    const isProjetoFinalizado = projConfig.etapas.length > 0 && 
-                                                checklist.length >= projConfig.etapas.length && 
-                                                checklist.every(item => item === true);
+            // Localize o filteredStudents.map e altere para receber (student, index)
+<tbody>
+    ${filteredStudents.map((student, index) => {
+        const data = getStudentProjectData(student, selectedProjectKey);
+        const checklist = data.checklist || [];
+        
+        const isProjetoFinalizado = projConfig.etapas.length > 0 && 
+                                    checklist.length >= projConfig.etapas.length && 
+                                    checklist.every(item => item === true);
 
-                    return `
-                    <tr>
-                        <td>
-                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                                <strong>${student.nome_aluno}</strong>
-                                ${isProjetoFinalizado ? `<span class="status-completo">Completo</span>` : ''}
-                            </div>
-                            <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
-                        </td>
-                        <td>
-                            ${student.grupo ? `<span class="badge-lado-${student.grupo.toLowerCase()}">Lado ${student.grupo}</span>` : '-'}
-                        </td>
-                        ${projConfig.etapas.map((_, i) => `
-                            <td>
-                                <div class="checklist-cell">
-                                    <div class="obs-container">
-                                        <button class="btn-icon-action" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})" title="Observação">
-                                            <i class="fa-regular fa-comment-dots"></i>
-                                        </button>
-                                        ${(data.observacoes && data.observacoes[i]) ? '<span class="obs-active-dot"></span>' : ''}
-                                    </div>
-                                    <input type="checkbox" class="checkbox" ${(data.checklist && data.checklist[i]) ? 'checked' : ''} 
-                                        onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
-                                </div>
-                            </td>
-                        `).join('')}
-                        <td style="text-align: center;">
-                            <button class="btn-icon-action btn-edit" onclick="editStudent('${student.id}')" title="Editar Aluno">
-                                <i class="fa-solid fa-pen-to-square"></i>
+        return `
+        <tr>
+            <td style="color: #666; font-weight: bold; font-size: 0.85rem;">
+                ${index + 1}
+            </td>
+            <td>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <strong>${student.nome_aluno}</strong>
+                    ${isProjetoFinalizado ? `<span class="status-completo">Completo</span>` : ''}
+                </div>
+                <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
+            </td>
+            <td>
+                ${student.grupo ? `<span class="badge-lado-${student.grupo.toLowerCase()}">Lado ${student.grupo}</span>` : '-'}
+            </td>
+            ${projConfig.etapas.map((_, i) => `
+                <td>
+                    <div class="checklist-cell">
+                        <div class="obs-container">
+                            <button class="btn-icon-action" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})" title="Observação">
+                                <i class="fa-regular fa-comment-dots"></i>
                             </button>
-                        </td>
-                    </tr>`;
-                }).join('')}
-            </tbody>
+                            ${(data.observacoes && data.observacoes[i]) ? '<span class="obs-active-dot"></span>' : ''}
+                        </div>
+                        <input type="checkbox" class="checkbox" ${(data.checklist && data.checklist[i]) ? 'checked' : ''} 
+                            onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
+                    </div>
+                </td>
+            `).join('')}
+            <td style="text-align: center;">
+                <button class="btn-icon-action btn-edit" onclick="editStudent('${student.id}')" title="Editar Aluno">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('')}
+</tbody>
         </table>
         ${filteredStudents.length === 0 ? '<div style="padding: 20px; text-align: center; color: #999;">Nenhum aluno encontrado para os filtros selecionados.</div>' : ''}
     </div>`;
