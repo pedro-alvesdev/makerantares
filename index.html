@@ -1069,20 +1069,13 @@ function showChecklistView() {
     <div class="table-container">
         <table class="table">
             <thead>
-            <tr>
+    <tr>
         <th style="width: 40px;">#</th> <th>Aluno</th>
         <th>Sala</th>
         ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
         <th style="text-align: center;">Ação</th>
     </tr>
-                <tr>
-                    <th>Aluno</th>
-                    <th>Sala</th>
-                    ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
-                    <th style="text-align: center;">Ação</th>
-                </tr>
-            </thead>
-            // Localize o filteredStudents.map e altere para receber (student, index)
+</thead>
 <tbody>
     ${filteredStudents.map((student, index) => {
         const data = getStudentProjectData(student, selectedProjectKey);
