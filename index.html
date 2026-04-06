@@ -24,6 +24,79 @@
     padding: 1.5rem;
 }
 
+    /* Tela de carregamento */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 26, 26, 0.95); /* Fundo quase opaco */
+    display: none; /* Escondido por padrão */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999; /* Por cima de tudo */
+    gap: 20px;
+}
+
+.loader-text {
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 1px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* CSS que você enviou do Uiverse */
+.loader {
+  position: relative;
+  font-size: 16px;
+  width: 5.5em;
+  height: 5.5em;
+}
+
+.loader:before {
+  content: '';
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(45deg);
+  height: 100%;
+  width: 4px;
+  background: #fff;
+  left: 50%;
+  top: 50%;
+}
+
+.loader:after {
+  content: '';
+  position: absolute;
+  left: 0.2em;
+  bottom: 0.18em;
+  width: 1em;
+  height: 1em;
+  background-color: #dc3545; /* Mudei para o seu vermelho maker, original era orange */
+  border-radius: 15%;
+  animation: rollingRock 2.5s cubic-bezier(.79, 0, .47, .97) infinite;
+}
+
+@keyframes rollingRock {
+  0% { transform: translate(0, -1em) rotate(-45deg) }
+  5% { transform: translate(0, -1em) rotate(-50deg) }
+  20% { transform: translate(1em, -2em) rotate(47deg) }
+  25% { transform: translate(1em, -2em) rotate(45deg) }
+  30% { transform: translate(1em, -2em) rotate(40deg) }
+  45% { transform: translate(2em, -3em) rotate(137deg) }
+  50% { transform: translate(2em, -3em) rotate(135deg) }
+  55% { transform: translate(2em, -3em) rotate(130deg) }
+  70% { transform: translate(3em, -4em) rotate(217deg) }
+  75% { transform: translate(3em, -4em) rotate(220deg) }
+  100% { transform: translate(0, -1em) rotate(-225deg) }
+}
+
 .login-box {
     background: #2d2d2d;
     padding: 2.5rem;
@@ -360,6 +433,10 @@
 </style>
 </head>
 <body>
+  <div id="loader-screen" class="loader-overlay">
+    <div class="loader"></div>
+    <div class="loader-text">SINCRONIZANDO COM O SISTEMA...</div>
+</div>
   <div id="app" class="app-container"></div>
   <input type="file" id="file-input-hidden" accept=".xlsx,.xls,.csv" style="display: none;" onchange="importSpreadsheet(event)">
 
@@ -1161,8 +1238,10 @@ window.renderGroupList = () => {
 // 5. LOGIN E INICIALIZAÇÃO
 function renderCurrentView() {
   const app = document.getElementById('app');
-  
+  const loaderScreen = document.getElementById('loader-screen');
+
   if (!isAuthenticated) {
+    // Renderiza a Interface de Login
     app.innerHTML = `
       <div class="login-screen">
         <div class="login-box">
@@ -1188,20 +1267,36 @@ function renderCurrentView() {
         </div>
       </div>`;
 
+    // Configura o evento de submissão do formulário
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const passInput = document.getElementById('password-input');
-      const btn = e.target.querySelector('button');
-      
+      const errorDiv = document.getElementById('login-error');
+
+      // Verifica a senha (ajuste conforme sua necessidade)
       if (passInput.value === '123456') {
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
-        btn.style.opacity = '0.7';
-        btn.disabled = true;
-        
-        isAuthenticated = true; 
-        await fetchStudents();
+        // 1. Ativa o Loader Visual que você escolheu
+        if (loaderScreen) loaderScreen.style.display = 'flex';
+
+        try {
+          // 2. Tenta carregar os dados do Supabase
+          isAuthenticated = true;
+          await fetchStudents(); 
+
+          // 3. Pequeno delay para o usuário ver a animação e garantir o carregamento
+          setTimeout(() => {
+            if (loaderScreen) loaderScreen.style.display = 'none';
+            renderCurrentView(); // Re-renderiza para mostrar o App principal
+          }, 1500);
+
+        } catch (error) {
+          console.error("Erro na autenticação:", error);
+          if (loaderScreen) loaderScreen.style.display = 'none';
+          isAuthenticated = false;
+          errorDiv.innerHTML = `<div class="error-message">Erro de conexão com o banco.</div>`;
+        }
       } else {
-        const errorDiv = document.getElementById('login-error');
+        // Erro de senha incorreta
         errorDiv.innerHTML = `
           <div class="error-message" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.8rem;">
             <i class="fa-solid fa-circle-exclamation"></i> Senha incorreta. Tente novamente.
@@ -1210,8 +1305,12 @@ function renderCurrentView() {
         passInput.focus();
       }
     });
-  } else { 
-    app.innerHTML = showMainApp(); 
+  } else {
+    // Se autenticado, renderiza a aplicação principal
+    app.innerHTML = showMainApp();
+    
+    // Garante que o loader esteja escondido ao entrar no app
+    if (loaderScreen) loaderScreen.style.display = 'none';
   }
 }
 
