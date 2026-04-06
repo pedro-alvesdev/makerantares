@@ -843,10 +843,17 @@ function getStudentProjectData(student, projectKey) {
 
 // 3. AÇÕES (CRUD)
 window.updateFilter = (key, value) => {
-  filters[key] = value;
-  if (key === 'sede') { filters.serie = ''; filters.turma = ''; }
-  else if (key === 'serie') { filters.turma = ''; }
-  renderCurrentView();
+    filters[key] = value;
+    
+    if (key === 'sede') {
+        filters.serie = '';
+        filters.turma = '';
+    } else if (key === 'serie') {
+        filters.turma = '';
+        // Opcional: filters.projeto = 'projeto1'; // Reseta para o primeiro projeto da nova série
+    }
+
+    renderCurrentView(); // Isso reconstrói a tela com os novos nomes
 };
 
 window.clearFilters = () => {
@@ -1015,13 +1022,20 @@ function showChecklistView() {
             </select>
         </div>
         <div class="filter-group">
-            <label class="form-label">Projeto Atual</label>
-            <select class="form-input" onchange="updateFilter('projeto', this.value)">
-                <option value="projeto1" ${filters.projeto === 'projeto1' ? 'selected' : ''}>Projeto 1</option>
-                <option value="projeto2" ${filters.projeto === 'projeto2' ? 'selected' : ''}>Projeto 2</option>
-                <option value="projeto3" ${filters.projeto === 'projeto3' ? 'selected' : ''}>Projeto 3</option>
-            </select>
-        </div>
+    <label class="form-label">Projeto Atual</label>
+    <select class="form-input" onchange="updateFilter('projeto', this.value)">
+        ${['projeto1', 'projeto2', 'projeto3'].map(key => {
+            // Tenta pegar o nome personalizado, se não existir, usa o padrão
+            let nomeExibicao = key === 'projeto1' ? 'Projeto 1' : key === 'projeto2' ? 'Projeto 2' : 'Projeto 3';
+            
+            if (filters.serie && seriesProjectsConfig[filters.serie] && seriesProjectsConfig[filters.serie][key]) {
+                nomeExibicao = seriesProjectsConfig[filters.serie][key].nome;
+            }
+            
+            return `<option value="${key}" ${filters.projeto === key ? 'selected' : ''}>${nomeExibicao}</option>`;
+        }).join('')}
+    </select>
+</div>
     </div>
 
     <div class="actions-bar">
