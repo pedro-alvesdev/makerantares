@@ -1270,7 +1270,7 @@ window.renderGroupList = () => {
                 <div style="font-weight: 600; color: #fff;">${student.nome_aluno}</div>
                 <div style="font-size: 0.75rem; color: #999;">${student.sede} | ${student.serie} - ${student.nome_turma}</div>
             </div>
-            // Dentro da função renderGroupList, substitua o bloco dos botões:
+            
 <div style="display: flex; gap: 5px;">
     <button class="btn ${student.grupo === '1' ? 'btn-primary' : 'btn-secondary'}" 
         style="padding: 5px 12px; min-width: 40px;" onclick="updateStudentGroup('${student.id}', '1')">1</button>
