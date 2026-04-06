@@ -757,7 +757,6 @@ window.updateProjectConfigDisplay = () => {
 };
 
 window.renderProjectsConfigForSerie = (serie) => {
-  // Se não existir config para a série, cria o padrão
   if (!seriesProjectsConfig[serie]) {
     seriesProjectsConfig[serie] = {
       projeto1: { nome: 'Projeto 1', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] },
@@ -772,14 +771,14 @@ window.renderProjectsConfigForSerie = (serie) => {
       <h3 style="color: #dc3545; margin-bottom: 1rem; text-transform: uppercase; font-size: 0.9rem;">${key}</h3>
       <div class="form-group">
         <label class="form-label">Nome do Projeto</label>
-        <input type="text" class="form-input" id="name-${key}" value="${config[key].nome}">
+        <input type="text" class="form-input" id="config-${key}-nome" value="${config[key].nome}">
       </div>
       <div class="form-group">
         <label class="form-label">Etapas do Checklist</label>
-        <div id="list-${key}">
+        <div id="config-${key}-stages-list">
           ${config[key].etapas.map((etapa, idx) => `
             <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem;">
-              <input type="text" class="form-input step-${key}" value="${etapa}">
+              <input type="text" class="form-input stage-input-${key}" value="${etapa}">
             </div>
           `).join('')}
         </div>
@@ -910,33 +909,60 @@ window.saveNewStudent = async () => {
 
 window.saveProjectConfig = async () => {
   const btn = document.getElementById('btn-save-project-config');
-  const serie = document.getElementById('serie-selector').value;
+  const serie = document.getElementById('serie-selector-config').value;
+  const loaderScreen = document.getElementById('loader-screen');
+
+  // Mostra o loader de cubinho enquanto salva
+  if (loaderScreen) loaderScreen.style.display = 'flex';
+  
   btn.disabled = true;
-  btn.textContent = 'Salvando...';
 
-  const newConfig = {};
-  ['projeto1', 'projeto2', 'projeto3'].forEach(key => {
-    const nome = document.getElementById(`config-${key}-nome`).value;
-    const inputs = document.querySelectorAll(`.stage-input-${key}`);
-    const etapas = Array.from(inputs).map(input => input.value);
-    newConfig[key] = { nome, etapas };
-  });
+  try {
+    const newConfig = {};
+    ['projeto1', 'projeto2', 'projeto3'].forEach(key => {
+      // Captura o nome pelo ID correto
+      const nomeElement = document.getElementById(`config-${key}-nome`);
+      if (!nomeElement) throw new Error(`Elemento config-${key}-nome não encontrado`);
+      
+      const nome = nomeElement.value;
+      const inputs = document.querySelectorAll(`.stage-input-${key}`);
+      const etapas = Array.from(inputs).map(input => input.value);
+      
+      newConfig[key] = { nome, etapas };
+    });
 
-  const studentsToUpdate = students.filter(s => s.serie === serie);
-  for (const student of studentsToUpdate) {
-      const p1 = getStudentProjectData(student, 'projeto1');
-      const p2 = getStudentProjectData(student, 'projeto2');
-      const p3 = getStudentProjectData(student, 'projeto3');
-      const payload = {
-          projetos_config: newConfig,
-          projeto1_etapas: { ...p1, nome: newConfig.projeto1.nome, etapas: newConfig.projeto1.etapas },
-          projeto2_etapas: { ...p2, nome: newConfig.projeto2.nome, etapas: newConfig.projeto2.etapas },
-          projeto3_etapas: { ...p3, nome: newConfig.projeto3.nome, etapas: newConfig.projeto3.etapas }
-      };
-      await _supabase.from('students').update(payload).eq('id', student.id);
+    // Atualização em massa no Supabase para todos os alunos da série
+    const studentsToUpdate = students.filter(s => s.serie === serie);
+    
+    for (const student of studentsToUpdate) {
+        const p1 = getStudentProjectData(student, 'projeto1');
+        const p2 = getStudentProjectData(student, 'projeto2');
+        const p3 = getStudentProjectData(student, 'projeto3');
+
+        const payload = {
+            projetos_config: newConfig,
+            projeto1_etapas: { ...p1, nome: newConfig.projeto1.nome, etapas: newConfig.projeto1.etapas },
+            projeto2_etapas: { ...p2, nome: newConfig.projeto2.nome, etapas: newConfig.projeto2.etapas },
+            projeto3_etapas: { ...p3, nome: newConfig.projeto3.nome, etapas: newConfig.projeto3.etapas }
+        };
+
+        await _supabase.from('students').update(payload).eq('id', student.id);
+    }
+
+    seriesProjectsConfig[serie] = newConfig;
+    
+    setTimeout(() => {
+      if (loaderScreen) loaderScreen.style.display = 'none';
+      closeModal();
+      fetchStudents(); // Atualiza a tela principal
+    }, 1000);
+
+  } catch (err) {
+    console.error("Erro ao salvar config:", err);
+    alert("Erro ao salvar configurações. Verifique o console.");
+    if (loaderScreen) loaderScreen.style.display = 'none';
+    btn.disabled = false;
   }
-  seriesProjectsConfig[serie] = newConfig;
-  closeModal(); await fetchStudents();
 };
 
 // 4. INTERFACE (MODAIS E TABELAS)
