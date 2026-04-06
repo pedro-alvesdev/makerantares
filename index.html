@@ -1345,6 +1345,7 @@ function renderCurrentView() {
 
       // Verifica a senha (ajuste conforme sua necessidade)
       if (passInput.value === '123456') {
+        localStorage.setItem('maker_authenticated', 'true');
         // 1. Ativa o Loader Visual que você escolheu
         if (loaderScreen) loaderScreen.style.display = 'flex';
 
@@ -1384,6 +1385,18 @@ function renderCurrentView() {
   }
 }
 
+    window.handleLogout = () => {
+    if (confirm("Deseja realmente sair do sistema?")) {
+        // REMOVE A SESSÃO SALVA
+        localStorage.removeItem('maker_authenticated');
+        
+        isAuthenticated = false;
+        students = [];
+        seriesProjectsConfig = {};
+        renderCurrentView();
+    }
+};
+
 function showMainApp() {
     return `
     <div class="header">
@@ -1396,9 +1409,28 @@ function showMainApp() {
         ${showChecklistView()}
     </div>`;
 }
+
+    async function fetch_and_restore() {
+    await fetchStudents();
+    document.getElementById('loader-screen').style.display = 'none';
+    renderCurrentView();
+}
 function closeModal() { document.querySelector('.modal-overlay')?.remove(); }
 
-document.addEventListener('DOMContentLoaded', renderCurrentView);
+// Inicialização com Verificação de Persistência
+document.addEventListener('DOMContentLoaded', () => {
+    // Verifica se o usuário já logou anteriormente
+    const savedAuth = localStorage.getItem('maker_authenticated');
+    
+    if (savedAuth === 'true') {
+        isAuthenticated = true;
+        // Se já estava logado, mostra o loader e busca os dados
+        document.getElementById('loader-screen').style.display = 'flex';
+        fetch_and_restore();
+    } else {
+        renderCurrentView();
+    }
+});
   </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e58f372a280f633',t:'MTc3NTA2MDczOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
