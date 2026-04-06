@@ -791,16 +791,25 @@ window.renderProjectsConfigForSerie = (serie) => {
 };
 
 window.addStepRow = (key) => {
-  const container = document.getElementById(`list-${key}`);
+  const container = document.getElementById(`config-${key}-stages-list`);
+  if (!container) return; // Segurança caso o container não seja encontrado
+  
   const div = document.createElement('div');
   div.style = "display:flex; gap:0.5rem; margin-bottom:0.5rem;";
-  div.innerHTML = `<input type="text" class="form-input step-${key}" value="Nova Etapa">`;
+  div.innerHTML = `<input type="text" class="form-input stage-input-${key}" value="Nova Etapa">`;
   container.appendChild(div);
 };
 
 window.removeStepRow = (key) => {
-  const container = document.getElementById(`list-${key}`);
-  if (container.children.length > 1) container.removeChild(container.lastChild);
+  const container = document.getElementById(`config-${key}-stages-list`);
+  if (!container) return;
+
+  // Garante que sempre sobre pelo menos uma etapa (não deixa a lista vazia)
+  if (container.children.length > 1) {
+    container.removeChild(container.lastChild);
+  } else {
+    alert("O projeto precisa ter pelo menos uma etapa.");
+  }
 };
 
 window.showObservationModal = (studentId, projectKey, stageIndex) => {
