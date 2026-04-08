@@ -1002,14 +1002,43 @@ window.clearFilters = () => {
 };
 
 window.toggleStage = async (id, projectKey, stageIndex, checked) => {
-  const student = students.find(s => s.id === id);
-  let data = getStudentProjectData(student, projectKey);
-  if(!data.checklist) data.checklist = [];
-  data.checklist[stageIndex] = checked;
+    // 1. Localiza o aluno e atualiza o estado local imediatamente (UI reativa)
+    const student = students.find(s => s.id === id);
+    if (!student) return;
 
-  await _supabase.from('students').update({ [projectKey + '_etapas']: data }).eq('id', id);
-  student[projectKey + '_etapas'] = data;
-  renderCurrentView();
+    let data = getStudentProjectData(student, projectKey);
+    if (!data.checklist) data.checklist = [];
+    data.checklist[stageIndex] = checked;
+    
+    // Atualiza a referência no objeto students para manter a consistência
+    student[projectKey + '_etapas'] = data;
+
+    // 2. Lógica do Selo "Completo" (Opcional, mas recomendado para feedback visual)
+    // Se você quiser que o selo apareça/suma sem dar F5, podemos buscar o elemento via DOM:
+    const nomeContainer = document.querySelector(`tr[data-id="${id}"] .nome-aluno-container`);
+    const projConfig = (filters.serie && seriesProjectsConfig[filters.serie]) 
+                       ? seriesProjectsConfig[filters.serie][projectKey] 
+                       : { etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
+    
+    const isFinalizado = data.checklist.every(v => v === true) && data.checklist.length === projConfig.etapas.length;
+    
+    // Atualiza o selo "Completo" manualmente via JS para não resetar o scroll
+    if (nomeContainer) {
+        let badge = nomeContainer.querySelector('.status-completo');
+        if (isFinalizado && !badge) {
+            nomeContainer.insertAdjacentHTML('beforeend', '<span class="status-completo">Completo</span>');
+        } else if (!isFinalizado && badge) {
+            badge.remove();
+        }
+    }
+
+    // 3. Atualiza o Supabase em segundo plano
+    const { error } = await _supabase.from('students').update({ [projectKey + '_etapas']: data }).eq('id', id);
+
+    if (error) {
+        console.error("Erro ao salvar:", error);
+        alert("Erro ao sincronizar. Verifique a internet.");
+    }
 };
 
 window.saveObservation = async (studentId, projectKey, stageIndex) => {
@@ -1204,14 +1233,14 @@ function showChecklistView() {
             <div class="border"></div>
             <div id="main">
                 <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
-                <input 
-                    type="text" 
-                    class="input" 
-                    placeholder="Buscar aluno..." 
-                    value="${filters.nome}"
-                    oninput="filters.nome = this.value; renderCurrentView();"
-                    autofocus
-                >
+               <input 
+    type="text" 
+    id="search-input-field" 
+    class="input" 
+    placeholder="Buscar aluno..." 
+    value="${filters.nome}" 
+    oninput="filters.nome = this.value; renderCurrentView(); focusSearch();"
+>
             </div>
         </div>
     </div>
@@ -1237,17 +1266,17 @@ function showChecklistView() {
                                     checklist.every(item => item === true);
 
         return `
-        <tr>
+        <tr data-id="${student.id}">
             <td style="color: #666; font-weight: bold; font-size: 0.85rem;">
                 ${index + 1}
             </td>
             <td>
-                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                    <strong>${student.nome_aluno}</strong>
-                    ${isProjetoFinalizado ? `<span class="status-completo">Completo</span>` : ''}
-                </div>
-                <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
-            </td>
+        <div class="nome-aluno-container" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <strong>${student.nome_aluno}</strong>
+            ${isFinalizado ? '<span class="status-completo">Completo</span>' : ''}
+        </div>
+        <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
+    </td>
 <td>
     ${student.grupo ? `<span class="badge-grupo-${student.grupo}">Grupo ${student.grupo}</span>` : '-'}
 </td>
@@ -1276,6 +1305,19 @@ function showChecklistView() {
         </table>
         ${filteredStudents.length === 0 ? '<div style="padding: 20px; text-align: center; color: #999;">Nenhum aluno encontrado para os filtros selecionados.</div>' : ''}
     </div>`;
+}
+
+    function focusSearch() {
+    const searchInput = document.getElementById('search-input-field');
+    if (searchInput) {
+        // Coloca o cursor no campo
+        searchInput.focus();
+        
+        // Coloca o cursor no final do texto (evita que ele volte para o início)
+        const val = searchInput.value;
+        searchInput.value = '';
+        searchInput.value = val;
+    }
 }
 
     window.exportToExcel = () => {
