@@ -101,6 +101,102 @@
   100% { transform: translate(0, -1em) rotate(-225deg) }
 }
 
+    /* Container da busca */
+.search-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 10px;
+}
+
+#poda {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.input {
+    background-color: #010201;
+    border: none;
+    width: 301px;
+    height: 56px;
+    border-radius: 10px;
+    color: white;
+    padding-inline: 59px;
+    font-size: 18px;
+    position: relative;
+    z-index: 5;
+}
+
+#main { position: relative; }
+
+#search-icon {
+    position: absolute;
+    left: 20px;
+    top: 18px;
+    z-index: 6;
+    color: #c0b9c0;
+}
+
+.white, .border, .darkBorderBg, .glow {
+    max-height: 70px;
+    max-width: 314px;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+    z-index: 1;
+    border-radius: 12px;
+    filter: blur(3px);
+}
+
+.input:focus { outline: none; }
+.input::placeholder { color: #c0b9c0; }
+
+/* Efeitos de Luz */
+.white { max-height: 63px; max-width: 307px; border-radius: 10px; filter: blur(2px); z-index: 2; }
+.white::before {
+    content: ""; z-index: -2; text-align: center; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(83deg);
+    position: absolute; width: 600px; height: 600px;
+    background-image: conic-gradient(rgba(0,0,0,0) 0%, #a099d8, rgba(0,0,0,0) 8%, rgba(0,0,0,0) 50%, #dfa2da, rgba(0,0,0,0) 58%);
+    transition: all 2s;
+}
+
+.border { max-height: 59px; max-width: 303px; border-radius: 11px; filter: blur(0.5px); z-index: 3; }
+.border::before {
+    content: ""; z-index: -2; text-align: center; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(70deg);
+    position: absolute; width: 600px; height: 600px;
+    background-image: conic-gradient(#1c191c, #402fb5 5%, #1c191c 14%, #1c191c 50%, #cf30aa 60%, #1c191c 64%);
+    transition: all 2s;
+}
+
+.darkBorderBg { max-height: 65px; max-width: 312px; z-index: 1; }
+.darkBorderBg::before {
+    content: ""; z-index: -2; text-align: center; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(82deg);
+    position: absolute; width: 600px; height: 600px;
+    background-image: conic-gradient(rgba(0,0,0,0), #18116a, rgba(0,0,0,0) 10%, rgba(0,0,0,0) 50%, #6e1b60, rgba(0,0,0,0) 60%);
+    transition: all 2s;
+}
+
+.glow { overflow: hidden; filter: blur(30px); opacity: 0.4; max-height: 130px; max-width: 354px; z-index: 0; }
+.glow:before {
+    content: ""; z-index: -2; text-align: center; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(60deg);
+    position: absolute; width: 999px; height: 999px;
+    background-image: conic-gradient(#000, #402fb5 5%, #000 38%, #000 50%, #cf30aa 60%, #000 87%);
+    transition: all 2s;
+}
+
+/* Hover e Focus Transitions */
+#poda:hover > .darkBorderBg::before, #poda:focus-within > .darkBorderBg::before { transform: translate(-50%, -50%) rotate(262deg); }
+#poda:hover > .glow::before, #poda:focus-within > .glow::before { transform: translate(-50%, -50%) rotate(240deg); }
+#poda:hover > .white::before, #poda:focus-within > .white::before { transform: translate(-50%, -50%) rotate(263deg); }
+#poda:hover > .border::before, #poda:focus-within > .border::before { transform: translate(-50%, -50%) rotate(250deg); }
+
 .login-box {
     background: #2d2d2d;
     padding: 2.5rem;
@@ -481,6 +577,7 @@ const filters = {
   serie: '',
   turma: '',
   projeto: 'projeto1'
+  nome: ''
 };
 
 // 2. BUSCA E FILTRAGEM
@@ -527,6 +624,11 @@ function filterStudents() {
     if (filters.sede && student.sede !== filters.sede) return false;
     if (filters.serie && student.serie !== filters.serie) return false;
     if (filters.turma && student.nome_turma !== filters.turma) return false;
+    if (filters.nome) {
+        const nomeBusca = filters.nome.toLowerCase();
+        const nomeAluno = student.nome_aluno.toLowerCase();
+        if (!nomeAluno.includes(nomeBusca)) return false;
+    }
     return true;
   });
 
@@ -1093,6 +1195,25 @@ function showChecklistView() {
             <i class="fa-solid fa-file-excel"></i> Exportar Excel
         </button>
         <button class="btn btn-secondary" onclick="clearFilters()">Limpar</button>
+    </div>
+    <div class="search-wrapper">
+        <div id="poda">
+            <div class="glow"></div>
+            <div class="darkBorderBg"></div>
+            <div class="white"></div>
+            <div class="border"></div>
+            <div id="main">
+                <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
+                <input 
+                    type="text" 
+                    class="input" 
+                    placeholder="Buscar aluno..." 
+                    value="${filters.nome}"
+                    oninput="filters.nome = this.value; renderCurrentView();"
+                    autofocus
+                >
+            </div>
+        </div>
     </div>
 
     <div class="table-container">
