@@ -1153,6 +1153,20 @@ window.saveProjectConfig = async () => {
 // 4. INTERFACE (MODAIS E TABELAS)
 function showChecklistView() {
     const filteredStudents = filterStudents();
+  const selectedProjectKey = filters.projeto || 'projeto1';
+
+  let projConfig = (filters.serie && seriesProjectsConfig[filters.serie]) 
+                     ? seriesProjectsConfig[filters.serie][selectedProjectKey] 
+                     : { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
+
+    const totalEtapasReais = projConfig.etapas.length;
+  const concluidosCount = filteredStudents.filter(student => {
+        const data = getStudentProjectData(student, selectedProjectKey);
+        const checklist = data.checklist || [];
+        return totalEtapasReais > 0 && 
+               checklist.length === totalEtapasReais && 
+               checklist.every(item => item === true);
+    }).length;
     
     // Obtenção de valores únicos para os filtros encadeados
     const sedes = getUniqueValues('sede');
@@ -1250,10 +1264,15 @@ function showChecklistView() {
             <thead>
             <tr>
                 <th style="width: 40px;">#</th>
-                <th>Aluno</th>
+                <th>
+            Aluno 
+            <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8; margin-left: 5px;">
+                - ${concluidosCount}/${totalAlunos} completos
+            </span>
+        </th>
                 <th>Grupo</th>
                 ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
-                <th style="text-align: center;">Ação</th>
+                <th style="text-align: center;">Editar</th>
             </tr>
         </thead>
 <tbody>
