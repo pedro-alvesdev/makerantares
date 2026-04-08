@@ -326,10 +326,11 @@
   .table-container {
     background: #2d2d2d;
     border-radius: 12px;
-    overflow-x: auto; /* Permite scroll lateral se a tabela for grande */
+    overflow-x: auto;
+    overflow-y: visible; /* Importante para o sticky funcionar */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    -webkit-overflow-scrolling: touch;
-  }
+    max-height: 80vh; /* Opcional: define uma altura máxima para a tabela antes de começar a rolar internamente */
+}
 
   .table {
     width: 100%;
@@ -343,6 +344,13 @@
     border-bottom: 1px solid #424242;
     font-size: 0.9rem;
   }
+    .table thead th {
+    position: sticky;
+    top: 0; /* Cola no topo da área de rolagem */
+    z-index: 10; /* Garante que fique por cima dos nomes dos alunos ao rolar */
+    background: #dc3545; /* Mantém a cor sólida para não ficar transparente */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Adiciona uma sombra leve para dar profundidade ao rolar */
+}
 
   .table thead { background: #dc3545; color: white; }
 
@@ -1078,13 +1086,14 @@ function showChecklistView() {
     <div class="table-container">
         <table class="table">
             <thead>
-    <tr>
-        <th style="width: 40px;">#</th> <th>Aluno</th>
-        <th>Sala</th>
-        ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
-        <th style="text-align: center;">Ação</th>
-    </tr>
-</thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th>Aluno</th>
+                <th>Grupo</th>
+                ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
+                <th style="text-align: center;">Ação</th>
+            </tr>
+        </thead>
 <tbody>
     ${filteredStudents.map((student, index) => {
         const data = getStudentProjectData(student, selectedProjectKey);
