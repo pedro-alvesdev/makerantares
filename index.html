@@ -211,13 +211,14 @@
     margin: 0;                      /* Remove margens que podem desalinhá-lo */
 }
 
-  .content {
+ .content {
     flex: 1;
     padding: 1rem;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-  }
+    
+}
 
   /* Filtros Responsivos */
   .filters {
@@ -323,13 +324,13 @@
   .btn-success { background: #28a745; color: white; }
 
   /* Tabela com Scroll Horizontal no Mobile */
-  .table-container {
+ .table-container {
     background: #2d2d2d;
     border-radius: 12px;
-    overflow-x: auto;
-    overflow-y: visible; /* Importante para o sticky funcionar */
+    overflow-x: auto; /* Mantém apenas a rolagem horizontal para telas pequenas */
+    overflow-y: visible; /* Libera a rolagem para o navegador */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    max-height: 80vh; /* Opcional: define uma altura máxima para a tabela antes de começar a rolar internamente */
+    margin-bottom: 2rem;
 }
 
   .table {
@@ -344,12 +345,19 @@
     border-bottom: 1px solid #424242;
     font-size: 0.9rem;
   }
-    .table thead th {
+   .table thead th {
+    position: -webkit-sticky; /* Suporte Safari */
     position: sticky;
-    top: 0; /* Cola no topo da área de rolagem */
-    z-index: 10; /* Garante que fique por cima dos nomes dos alunos ao rolar */
-    background: #dc3545; /* Mantém a cor sólida para não ficar transparente */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Adiciona uma sombra leve para dar profundidade ao rolar */
+    top: 0; /* Onde ele deve travar (no limite superior da tela) */
+    z-index: 100; /* Garante que fique por cima dos dados dos alunos */
+    background: #dc3545; 
+    padding: 12px 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* Sombra para destacar quando estiver fixo */
+    border: none;
+}
+    .table tbody tr {
+    position: relative;
+    z-index: 1;
 }
 
   .table thead { background: #dc3545; color: white; }
