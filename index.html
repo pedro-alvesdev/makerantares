@@ -1153,33 +1153,30 @@ window.saveProjectConfig = async () => {
 // 4. INTERFACE (MODAIS E TABELAS)
 function showChecklistView() {
     const filteredStudents = filterStudents();
-  const selectedProjectKey = filters.projeto || 'projeto1';
+    const selectedProjectKey = filters.projeto || 'projeto1';
+    
+    // 1. Obtenção da configuração de etapas (Prioriza a sua edição na DIV de projetos)
+    let projConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
+    if (filters.serie && seriesProjectsConfig[filters.serie] && seriesProjectsConfig[filters.serie][selectedProjectKey]) {
+        projConfig = seriesProjectsConfig[filters.serie][selectedProjectKey];
+    }
 
-  let projConfig = (filters.serie && seriesProjectsConfig[filters.serie]) 
-                     ? seriesProjectsConfig[filters.serie][selectedProjectKey] 
-                     : { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
-
+    // 2. Lógica do Contador (x/y completos)
     const totalEtapasReais = projConfig.etapas.length;
-  const concluidosCount = filteredStudents.filter(student => {
+    const concluidosCount = filteredStudents.filter(student => {
         const data = getStudentProjectData(student, selectedProjectKey);
         const checklist = data.checklist || [];
+        // Considera completo apenas se tiver o número exato de etapas marcadas como true
         return totalEtapasReais > 0 && 
-               checklist.length === totalEtapasReais && 
-               checklist.every(item => item === true);
+               checklist.filter(v => v === true).length === totalEtapasReais;
     }).length;
     
-    // Obtenção de valores únicos para os filtros encadeados
+    const totalAlunosExibidos = filteredStudents.length;
+
+    // 3. Obtenção de valores para os filtros Select
     const sedes = getUniqueValues('sede');
     const series = getFilteredUniqueValues('serie', { sede: filters.sede });
     const turmas = getFilteredUniqueValues('nome_turma', { sede: filters.sede, serie: filters.serie });
-    
-    const selectedProjectKey = filters.projeto || 'projeto1';
-    
-    // Configuração padrão de etapas caso não exista uma específica para a série
-    let projConfig = { nome: 'Projeto', etapas: ['Etapa 1', 'Etapa 2', 'Etapa 3'] };
-    if (filters.serie && seriesProjectsConfig[filters.serie]) {
-        projConfig = seriesProjectsConfig[filters.serie][selectedProjectKey];
-    }
 
     return `
     <div class="filters">
@@ -1205,56 +1202,41 @@ function showChecklistView() {
             </select>
         </div>
         <div class="filter-group">
-    <label class="form-label">Projeto Atual</label>
-    <select class="form-input" onchange="updateFilter('projeto', this.value)">
-        ${['projeto1', 'projeto2', 'projeto3'].map(key => {
-            // Tenta pegar o nome personalizado, se não existir, usa o padrão
-            let nomeExibicao = key === 'projeto1' ? 'Projeto 1' : key === 'projeto2' ? 'Projeto 2' : 'Projeto 3';
-            
-            if (filters.serie && seriesProjectsConfig[filters.serie] && seriesProjectsConfig[filters.serie][key]) {
-                nomeExibicao = seriesProjectsConfig[filters.serie][key].nome;
-            }
-            
-            return `<option value="${key}" ${filters.projeto === key ? 'selected' : ''}>${nomeExibicao}</option>`;
-        }).join('')}
-    </select>
-</div>
+            <label class="form-label">Projeto Atual</label>
+            <select class="form-input" onchange="updateFilter('projeto', this.value)">
+                ${['projeto1', 'projeto2', 'projeto3'].map(key => {
+                    let nomeExibicao = key === 'projeto1' ? 'Projeto 1' : key === 'projeto2' ? 'Projeto 2' : 'Projeto 3';
+                    if (filters.serie && seriesProjectsConfig[filters.serie] && seriesProjectsConfig[filters.serie][key]) {
+                        nomeExibicao = seriesProjectsConfig[filters.serie][key].nome;
+                    }
+                    return `<option value="${key}" ${filters.projeto === key ? 'selected' : ''}>${nomeExibicao}</option>`;
+                }).join('')}
+            </select>
+        </div>
     </div>
 
     <div class="actions-bar">
-        <button class="btn btn-secondary" onclick="showImportInstructionsModal()">
-            <i class="fa-solid fa-file-import"></i> Importar
-        </button>
-        <button class="btn btn-success" onclick="showAddStudentModal()">
-            <i class="fa-solid fa-user-plus"></i> Adicionar
-        </button>
-        <button class="btn btn-secondary" onclick="showGroupAssignmentModal()">
-            <i class="fa-solid fa-users-rectangle"></i> Atribuir Salas
-        </button>
-        <button class="btn btn-secondary" onclick="showProjectConfigModal()">
-            <i class="fa-solid fa-gear"></i> Projetos
-        </button>
-        <button class="btn btn-secondary" onclick="exportToExcel()">
-            <i class="fa-solid fa-file-excel"></i> Exportar Excel
-        </button>
+        <button class="btn btn-secondary" onclick="showImportInstructionsModal()"><i class="fa-solid fa-file-import"></i> Importar</button>
+        <button class="btn btn-success" onclick="showAddStudentModal()"><i class="fa-solid fa-user-plus"></i> Aluno</button>
+        <button class="btn btn-secondary" onclick="showGroupAssignmentModal()"><i class="fa-solid fa-users-rectangle"></i> Grupos</button>
+        <button class="btn btn-secondary" onclick="showProjectConfigModal()"><i class="fa-solid fa-gear"></i> Projetos</button>
+        <button class="btn btn-secondary" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
         <button class="btn btn-secondary" onclick="clearFilters()">Limpar</button>
     </div>
+
     <div class="search-wrapper">
         <div id="poda">
             <div class="glow"></div>
-            <div class="darkBorderBg"></div>
-            <div class="white"></div>
-            <div class="border"></div>
             <div id="main">
                 <i class="fa-solid fa-magnifying-glass" id="search-icon"></i>
-               <input 
-    type="text" 
-    id="search-input-field" 
-    class="input" 
-    placeholder="Buscar aluno..." 
-    value="${filters.nome}" 
-    oninput="filters.nome = this.value; renderCurrentView(); focusSearch();"
->
+                <input 
+                    type="text" 
+                    id="search-input-field" 
+                    class="input" 
+                    placeholder="Buscar aluno..." 
+                    value="${filters.nome}" 
+                    oninput="filters.nome = this.value; renderCurrentView(); focusSearch();"
+                >
             </div>
         </div>
     </div>
@@ -1262,68 +1244,61 @@ function showChecklistView() {
     <div class="table-container">
         <table class="table">
             <thead>
-            <tr>
-                <th style="width: 40px;">#</th>
-                <th>
-            Aluno 
-            <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8; margin-left: 5px;">
-                - ${concluidosCount}/${totalAlunos} completos
-            </span>
-        </th>
-                <th>Grupo</th>
-                ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
-                <th style="text-align: center;">Editar</th>
-            </tr>
-        </thead>
-<tbody>
-    ${filteredStudents.map((student, index) => {
-        const data = getStudentProjectData(student, selectedProjectKey);
-const checklist = data.checklist || [];
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>
+                        Aluno 
+                        <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8; margin-left: 5px; color: #fff;">
+                            - ${concluidosCount}/${totalAlunosExibidos} completos
+                        </span>
+                    </th>
+                    <th>Grupo</th>
+                    ${projConfig.etapas.map(e => `<th>${e}</th>`).join('')}
+                    <th style="text-align: center;">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredStudents.map((student, index) => {
+                    const data = getStudentProjectData(student, selectedProjectKey);
+                    const checklist = data.checklist || [];
+                    
+                    // Cálculo de finalização individual
+                    const isFinalizado = totalEtapasReais > 0 && 
+                                         checklist.filter(v => v === true).length === totalEtapasReais;
 
-// CALCULE AQUI ANTES DE RETORNAR O HTML:
-const isFinalizado = projConfig.etapas.length > 0 && 
-                     checklist.length === projConfig.etapas.length && 
-                     checklist.every(v => v === true);
-
-        return `
-        <tr data-id="${student.id}">
-            <td style="color: #666; font-weight: bold; font-size: 0.85rem;">
-                ${index + 1}
-            </td>
-            <td>
-        <div class="nome-aluno-container" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <strong>${student.nome_aluno}</strong>
-            ${isFinalizado ? '<span class="status-completo">Completo</span>' : ''}
-        </div>
-        <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
-    </td>
-<td>
-    ${student.grupo ? `<span class="badge-grupo-${student.grupo}">Grupo ${student.grupo}</span>` : '-'}
-</td>
-            ${projConfig.etapas.map((_, i) => `
-                <td>
-                    <div class="checklist-cell">
-                        <div class="obs-container">
-                            <button class="btn-icon-action" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})" title="Observação">
-                                <i class="fa-regular fa-comment-dots"></i>
-                            </button>
-                            ${(data.observacoes && data.observacoes[i]) ? '<span class="obs-active-dot"></span>' : ''}
-                        </div>
-                        <input type="checkbox" class="checkbox" ${(data.checklist && data.checklist[i]) ? 'checked' : ''} 
-                            onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
-                    </div>
-                </td>
-            `).join('')}
-            <td style="text-align: center;">
-                <button class="btn-icon-action btn-edit" onclick="editStudent('${student.id}')" title="Editar Aluno">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-            </td>
-        </tr>`;
-    }).join('')}
-</tbody>
+                    return `
+                    <tr data-id="${student.id}">
+                        <td style="color: #666; font-weight: bold;">${index + 1}</td>
+                        <td>
+                            <div class="nome-aluno-container" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <strong>${student.nome_aluno}</strong>
+                                ${isFinalizado ? '<span class="status-completo">Completo</span>' : ''}
+                            </div>
+                            <div style="font-size:0.8rem; color:#999">${student.nome_turma}</div>
+                        </td>
+                        <td>${student.grupo ? `<span class="badge-grupo-${student.grupo}">Grupo ${student.grupo}</span>` : '-'}</td>
+                        ${projConfig.etapas.map((_, i) => `
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+                                    <div class="obs-container">
+                                        <button class="btn-icon-action" onclick="showObservationModal('${student.id}','${selectedProjectKey}',${i})">
+                                            <i class="fa-regular fa-comment-dots"></i>
+                                        </button>
+                                        ${(data.observacoes && data.observacoes[i]) ? '<span class="obs-active-dot"></span>' : ''}
+                                    </div>
+                                    <input type="checkbox" class="checkbox" ${checklist[i] ? 'checked' : ''} 
+                                        onchange="toggleStage('${student.id}','${selectedProjectKey}',${i},this.checked)">
+                                </div>
+                            </td>
+                        `).join('')}
+                        <td style="text-align: center;">
+                            <button class="btn-icon-action" onclick="editStudent('${student.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
         </table>
-        ${filteredStudents.length === 0 ? '<div style="padding: 20px; text-align: center; color: #999;">Nenhum aluno encontrado para os filtros selecionados.</div>' : ''}
+        ${totalAlunosExibidos === 0 ? '<div style="padding: 2rem; text-align: center; color: #666;">Nenhum aluno encontrado.</div>' : ''}
     </div>`;
 }
 
