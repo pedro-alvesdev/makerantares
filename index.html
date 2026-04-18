@@ -849,7 +849,10 @@ window.editStudent = (id) => {
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="confirmRemoveStudent('${student.id}')" style="background:#666">Arquivar</button>
+       // Dentro do HTML da modal na function editStudent:
+<button class="btn btn-secondary" onclick="confirmRemoveStudent('${student.id}')" style="background:#666">
+    <i class="fa-solid fa-trash-can"></i> Excluir
+</button>
         <button class="btn btn-primary" onclick="updateStudent('${student.id}')">Salvar Alterações</button>
       </div>
     </div>`;
@@ -950,6 +953,39 @@ window.removeStepRow = (key) => {
   } else {
     alert("O projeto precisa ter pelo menos uma etapa.");
   }
+};
+
+    window.confirmRemoveStudent = async (id) => {
+    const student = students.find(s => s.id === id);
+    if (!student) return;
+
+    if (confirm(`TEM CERTEZA? Isso excluirá permanentemente o aluno ${student.nome_aluno} e todo o progresso de projetos.`)) {
+        const loaderScreen = document.getElementById('loader-screen');
+        if (loaderScreen) loaderScreen.style.display = 'flex';
+
+        try {
+            // Deleta definitivamente do Supabase
+            const { error } = await _supabase
+                .from('students')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Remove da memória local para não precisar de F5
+            students = students.filter(s => s.id !== id);
+            
+            closeModal();
+            renderCurrentView(); // Atualiza a tabela
+            
+            alert("Aluno excluído com sucesso.");
+        } catch (err) {
+            console.error("Erro ao excluir:", err);
+            alert("Erro ao excluir aluno do banco de dados.");
+        } finally {
+            if (loaderScreen) loaderScreen.style.display = 'none';
+        }
+    }
 };
 
 window.showObservationModal = (studentId, projectKey, stageIndex) => {
