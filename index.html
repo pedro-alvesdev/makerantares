@@ -608,15 +608,18 @@ async function fetchStudents() {
   }
 }
 
-function getUniqueValues(key) {
-  return [...new Set(students.map(s => s[key]).filter(Boolean))].sort();
+function getUniqueValues(field) {
+    const values = students.map(s => s[field]).filter(v => v);
+    return [...new Set(values)].sort();
 }
 
-function getFilteredUniqueValues(baseKey, currentFilters = {}) {
-  let filtered = students;
-  if (currentFilters.sede) filtered = filtered.filter(s => s.sede === currentFilters.sede);
-  if (currentFilters.serie) filtered = filtered.filter(s => s.serie === currentFilters.serie);
-  return [...new Set(filtered.map(s => s[baseKey]).filter(Boolean))].sort();
+function getFilteredUniqueValues(field, context) {
+    let filtered = students;
+    if (context.sede) filtered = filtered.filter(s => s.sede === context.sede);
+    if (context.serie) filtered = filtered.filter(s => s.serie === context.serie);
+    
+    const values = filtered.map(s => s[field]).filter(v => v);
+    return [...new Set(values)].sort();
 }
 
 function filterStudents() {
@@ -738,46 +741,51 @@ function filterStudents() {
 };
 
     window.showAddStudentModal = () => {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
+    const sedes = getUniqueValues('sede');
+    const series = getUniqueValues('serie');
+    const turmas = getUniqueValues('nome_turma');
+
+    const content = `
+    <div class="modal-header">
         <h2 class="modal-title">Novo Aluno</h2>
-        <button class="close-btn" onclick="closeModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="add-student-form">
-          <div class="form-group">
-            <label class="form-label">Nome do Aluno</label>
-            <input type="text" class="form-input" name="nome_aluno" placeholder="Nome Completo" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Matrícula / RA</label>
-            <input type="text" class="form-input" name="matricula" placeholder="Opcional">
-          </div>
-          <div class="form-group">
+        <button class="btn-close" onclick="closeModal()">&times;</button>
+    </div>
+    <form id="add-student-form" onsubmit="event.preventDefault(); saveNewStudent();">
+        <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-input" name="nome_aluno" required>
+        </div>
+        
+        <div class="form-group">
             <label class="form-label">Sede</label>
-            <input type="text" class="form-input" name="sede" placeholder="Ex: Sede Centro" required>
-          </div>
-          <div class="form-group" style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <label class="form-label">Série</label>
-                <input type="text" class="form-input" name="serie" placeholder="Ex: 8 ano" required>
-            </div>
-            <div style="flex: 1;">
-                <label class="form-label">Turma</label>
-                <input type="text" class="form-input" name="nome_turma" placeholder="Ex: A" required>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-success" onclick="saveNewStudent()">Cadastrar no Banco</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
+            <select class="form-input" name="sede" required>
+                <option value="">Selecione a Sede...</option>
+                ${sedes.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Série</label>
+            <select class="form-input" name="serie" required>
+                <option value="">Selecione a Série...</option>
+                ${series.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Turma</label>
+            <select class="form-input" name="nome_turma" required>
+                <option value="">Selecione a Turma...</option>
+                ${turmas.map(t => `<option value="${t}">${t}</option>`).join('')}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+            <i class="fa-solid fa-user-plus"></i> Cadastrar Aluno
+        </button>
+    </form>`;
+
+    showModal(content);
 };
 
     window.showImportInstructionsModal = () => {
@@ -804,59 +812,62 @@ function filterStudents() {
 };
 
 window.editStudent = (id) => {
-  const student = students.find(s => s.id === id);
-  if (!student) return;
+    const student = students.find(s => s.id === id);
+    if (!student) return;
 
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
+    // Obtém as listas baseadas no que já existe no banco
+    const sedes = getUniqueValues('sede');
+    const series = getUniqueValues('serie');
+    const turmas = getUniqueValues('nome_turma');
+
+    const content = `
+    <div class="modal-header">
         <h2 class="modal-title">Editar Aluno</h2>
-        <button class="close-btn" onclick="closeModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="edit-student-form">
-          <div class="form-group">
-            <label class="form-label">Nome</label>
-            <input type="text" class="form-input" name="nome_aluno" value="${student.nome_aluno}" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Matrícula</label>
-            <input type="text" class="form-input" name="matricula" value="${student.matricula || ''}">
-          </div>
-          <div class="form-group">
+        <button class="btn-close" onclick="closeModal()">&times;</button>
+    </div>
+    <form id="edit-student-form" onsubmit="event.preventDefault(); updateStudent('${id}');">
+        <div class="form-group">
+            <label class="form-label">Nome do Aluno</label>
+            <input type="text" class="form-input" name="nome_aluno" value="${student.nome_aluno || ''}" required>
+        </div>
+
+        <div class="form-group">
             <label class="form-label">Sede</label>
-            <input type="text" class="form-input" name="sede" value="${student.sede || ''}">
-          </div>
-          <div class="form-group">
+            <select class="form-input" name="sede" required>
+                ${sedes.map(s => `<option value="${s}" ${student.sede === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+        </div>
+
+        <div class="form-group">
             <label class="form-label">Série</label>
-            <input type="text" class="form-input" name="serie" value="${student.serie || ''}">
-          </div>
-          <div class="form-group">
+            <select class="form-input" name="serie" required>
+                ${series.map(s => `<option value="${s}" ${student.serie === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+        </div>
+
+        <div class="form-group">
             <label class="form-label">Turma</label>
-            <input type="text" class="form-input" name="nome_turma" value="${student.nome_turma || ''}">
-          </div>
-          
-<div class="form-group">
-    <label class="form-label">Grupo</label>
-    <select class="form-input" name="grupo">
-        <option value="" ${!student.grupo ? 'selected' : ''}>Nenhum</option>
-        <option value="1" ${student.grupo === '1' ? 'selected' : ''}>Grupo 1</option>
-        <option value="2" ${student.grupo === '2' ? 'selected' : ''}>Grupo 2</option>
-    </select>
-</div>
-        </form>
-      </div>
-      <div class="modal-footer">
-      
-<button class="btn btn-secondary" onclick="confirmRemoveStudent('${student.id}')" style="background:#666">
-    <i class="fa-solid fa-trash-can"></i> Excluir
-</button>
-        <button class="btn btn-primary" onclick="updateStudent('${student.id}')">Salvar Alterações</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
+            <select class="form-input" name="nome_turma" required>
+                ${turmas.map(t => `<option value="${t}" ${student.nome_turma === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Grupo</label>
+            <input type="number" class="form-input" name="grupo" value="${student.grupo || ''}" placeholder="Ex: 1">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">
+                <i class="fa-solid fa-save"></i> Salvar Alterações
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="confirmRemoveStudent('${id}')" style="background: #dc3545;">
+                <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+        </div>
+    </form>`;
+
+    showModal(content);
 };
 
     window.showProjectConfigModal = () => {
@@ -1499,24 +1510,48 @@ window.renderGroupList = () => {
     `).join('') || '<p style="text-align:center; color:#999; padding: 20px;">Nenhum aluno encontrado.</p>';
 };
 
-    window.updateStudentGroup = async (id, grupo) => {
-    // 1. Atualização Visual Imediata (Otimista)
-    const student = students.find(s => s.id === id);
-    if (student) student.grupo = grupo;
-    renderGroupList(); // Atualiza a lista da modal
+    window.updateStudent = async (id) => {
+    const form = document.getElementById('edit-student-form');
+    if (!form) return;
 
-    // 2. Atualização no Supabase
-    const { error } = await _supabase
-        .from('students')
-        .update({ grupo: grupo })
-        .eq('id', id);
+    const formData = new FormData(form);
+    const loaderScreen = document.getElementById('loader-screen');
 
-    if (error) {
-        console.error("Erro ao atualizar grupo:", error);
-        alert("Erro ao salvar no banco de dados.");
-    } else {
-        // Atualiza a tabela principal ao fundo
-        renderCurrentView();
+    // Mostra o loader de cubinho
+    if (loaderScreen) loaderScreen.style.display = 'flex';
+
+    const updatedData = {
+        nome_aluno: formData.get('nome_aluno'),
+        matricula: formData.get('matricula'),
+        sede: formData.get('sede'),
+        serie: formData.get('serie'),
+        nome_turma: formData.get('nome_turma'),
+        grupo: formData.get('grupo')
+    };
+
+    try {
+        const { error } = await _supabase
+            .from('students')
+            .update(updatedData)
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Atualiza o aluno na memória local para refletir na tela sem F5
+        const index = students.findIndex(s => s.id === id);
+        if (index !== -1) {
+            students[index] = { ...students[index], ...updatedData };
+        }
+
+        closeModal();
+        renderCurrentView(); // Re-renderiza a tabela com os novos dados
+        alert("Dados atualizados com sucesso!");
+
+    } catch (err) {
+        console.error("Erro ao atualizar aluno:", err);
+        alert("Erro ao salvar alterações no banco de dados.");
+    } finally {
+        if (loaderScreen) loaderScreen.style.display = 'none';
     }
 };
 
