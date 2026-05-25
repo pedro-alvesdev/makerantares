@@ -765,8 +765,6 @@ function filterStudents() {
 
     window.showAddStudentModal = () => {
     const sedes = getUniqueValues('sede');
-    const series = getUniqueValues('serie');
-    const turmas = getUniqueValues('nome_turma');
 
     const content = `
     <div class="modal-header">
@@ -776,12 +774,12 @@ function filterStudents() {
     <form id="add-student-form" onsubmit="event.preventDefault(); saveNewStudent();">
         <div class="form-group">
             <label class="form-label">Nome Completo</label>
-            <input type="text" class="form-input" name="nome_aluno" required>
+            <input type="text" class="form-input" name="nome_aluno" required autofocus>
         </div>
         
         <div class="form-group">
             <label class="form-label">Sede</label>
-            <select class="form-input" name="sede" required>
+            <select class="form-input" id="modal-add-sede" name="sede" required>
                 <option value="">Selecione a Sede...</option>
                 ${sedes.map(s => `<option value="${s}">${s}</option>`).join('')}
             </select>
@@ -789,17 +787,15 @@ function filterStudents() {
 
         <div class="form-group">
             <label class="form-label">Série</label>
-            <select class="form-input" name="serie" required>
-                <option value="">Selecione a Série...</option>
-                ${series.map(s => `<option value="${s}">${s}</option>`).join('')}
+            <select class="form-input" id="modal-add-serie" name="serie" required disabled>
+                <option value="">Selecione a Sede primeiro...</option>
             </select>
         </div>
 
         <div class="form-group">
             <label class="form-label">Turma</label>
-            <select class="form-input" name="nome_turma" required>
-                <option value="">Selecione a Turma...</option>
-                ${turmas.map(t => `<option value="${t}">${t}</option>`).join('')}
+            <select class="form-input" id="modal-add-turma" name="nome_turma" required disabled>
+                <option value="">Selecione a Série primeiro...</option>
             </select>
         </div>
 
@@ -809,7 +805,56 @@ function filterStudents() {
     </form>`;
 
     showModal(content);
+    
+    // ATIVA O ENCADEAMENTO LOGO APÓS RENDERIZAR A TELA
+    setupModalChainEvents();
 };
+
+    function setupModalChainEvents() {
+    const sedeSelect = document.getElementById('modal-add-sede');
+    const serieSelect = document.getElementById('modal-add-serie');
+    const turmaSelect = document.getElementById('modal-add-turma');
+
+    if (!sedeSelect || !serieSelect || !turmaSelect) return;
+
+    // Quando mudar a Sede
+    sedeSelect.addEventListener('change', () => {
+        const sedeVal = sedeSelect.value;
+        
+        // Reseta os filhos
+        serieSelect.innerHTML = '<option value="">Selecione a Série...</option>';
+        turmaSelect.innerHTML = '<option value="">Selecione a Série primeiro...</option>';
+        turmaSelect.disabled = true;
+
+        if (sedeVal) {
+            // Filtra as séries pertencentes apenas àquela sede
+            const seriesFiltradas = getFilteredUniqueValues('serie', { sede: sedeVal });
+            
+            serieSelect.innerHTML += seriesFiltradas.map(s => `<option value="${s}">${s}</option>`).join('');
+            serieSelect.disabled = false;
+        } else {
+            serieSelect.disabled = true;
+        }
+    });
+
+    // Quando mudar a Série
+    serieSelect.addEventListener('change', () => {
+        const sedeVal = sedeSelect.value;
+        const serieVal = serieSelect.value;
+
+        turmaSelect.innerHTML = '<option value="">Selecione a Turma...</option>';
+
+        if (serieVal) {
+            // Filtra as turmas pertencentes àquela sede e série juntas
+            const turmasFiltradas = getFilteredUniqueValues('nome_turma', { sede: sedeVal, serie: serieVal });
+            
+            turmaSelect.innerHTML += turmasFiltradas.map(t => `<option value="${t}">${t}</option>`).join('');
+            turmaSelect.disabled = false;
+        } else {
+            turmaSelect.disabled = true;
+        }
+    });
+}
 
     window.showImportInstructionsModal = () => {
   const modal = document.createElement('div');
